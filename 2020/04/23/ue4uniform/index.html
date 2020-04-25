@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/blog/images/apple-touch-icon-alex.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/blog/images/favicon-32x32-alex.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/blog/images/favicon-16x16-alex.png">
+  <link rel="mask-icon" href="/blog/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="MtLzwmTs3a2ZnDBFhocKgVUp2SOlNOwwXgBdgGt482I">
+
+<link rel="stylesheet" href="/blog/css/main.css">
+
+
+<link rel="stylesheet" href="/blog/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"cuihongzhi1991.github.io","root":"/blog/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"disqus","storage":true,"lazyload":false,"nav":null,"activeClass":"disqus"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="Uniform是一种从CPU中的应用向GPU中的着色器发送数据的方式，Uniform是全局的(Global)。全局意味着uniform变量必须在每个着色器程序对象中都是独一无二的，而且它可以被着色器程序的任意着色器在任意阶段访问。第二，无论你把Uniform值设置成什么，Uniform会一直保存它们的数据，直到它们被重置或更新。UE4的材质编辑器可以调用的红色节点中很多就是Uniform，如Obj">
+<meta property="og:type" content="article">
+<meta property="og:title" content="UE4.22+ 添加Uniform">
+<meta property="og:url" content="https://cuihongzhi1991.github.io/2020/04/23/ue4uniform/index.html">
+<meta property="og:site_name" content="Alex Technical Art">
+<meta property="og:description" content="Uniform是一种从CPU中的应用向GPU中的着色器发送数据的方式，Uniform是全局的(Global)。全局意味着uniform变量必须在每个着色器程序对象中都是独一无二的，而且它可以被着色器程序的任意着色器在任意阶段访问。第二，无论你把Uniform值设置成什么，Uniform会一直保存它们的数据，直到它们被重置或更新。UE4的材质编辑器可以调用的红色节点中很多就是Uniform，如Obj">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/04/23/ue4uniform/primUniform.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/04/23/ue4uniform/viewUniform.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/04/23/ue4uniform/newUniform.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/04/23/ue4uniform/reflection.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/04/23/ue4uniform/cbufferView.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/04/23/ue4uniform/cbufferPrim.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/04/23/ue4uniform/addMember.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/04/23/ue4uniform/attachSky.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/04/23/ue4uniform/p1.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/04/23/ue4uniform/p2.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/04/23/ue4uniform/p3.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/04/23/ue4uniform/p4.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/04/23/ue4uniform/p5.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/04/23/ue4uniform/p6.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/04/23/ue4uniform/p7.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/04/23/ue4uniform/p8.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/04/23/ue4uniform/p9.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/04/23/ue4uniform/p10.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/04/23/ue4uniform/p11.png">
+<meta property="article:published_time" content="2020-04-23T05:10:39.000Z">
+<meta property="article:modified_time" content="2020-04-25T06:17:48.487Z">
+<meta property="article:author" content="Alex Tsui">
+<meta property="article:tag" content="UE4">
+<meta property="article:tag" content="材质">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cuihongzhi1991.github.io/blog/2020/04/23/ue4uniform/primUniform.png">
+
+<link rel="canonical" href="https://cuihongzhi1991.github.io/2020/04/23/ue4uniform/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>UE4.22+ 添加Uniform | Alex Technical Art</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/blog/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Alex Technical Art</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/blog/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/blog/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2N1aWhvbmd6aGkxOTkx" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cuihongzhi1991.github.io/2020/04/23/ue4uniform/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/blog/images/avatar.png">
+      <meta itemprop="name" content="Alex Tsui">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Alex Technical Art">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          UE4.22+ 添加Uniform
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-04-23 13:10:39" itemprop="dateCreated datePublished" datetime="2020-04-23T13:10:39+08:00">2020-04-23</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/blog/categories/Unreal-Engine/" itemprop="url" rel="index"><span itemprop="name">Unreal Engine</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/blog/2020/04/23/ue4uniform/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/04/23/ue4uniform/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Uniform是一种从CPU中的应用向GPU中的着色器发送数据的方式，Uniform是全局的(Global)。全局意味着uniform变量必须在每个着色器程序对象中都是独一无二的，而且它可以被着色器程序的任意着色器在任意阶段访问。第二，无论你把Uniform值设置成什么，Uniform会一直保存它们的数据，直到它们被重置或更新。<br>UE4的材质编辑器可以调用的红色节点中很多就是Uniform，如ObjectBounds，ActorPosition等等。本文记录了如何在UE4.22或更高版本添加自定义的Uniform，并且生成材质节点在任意材质中调用，该Uniform值也将显示在场景的Skylight组件上供用户修改。</p>
+<a id="more"></a>
+
+<h2 id="创建CPU中的数据结构体"><a href="#创建CPU中的数据结构体" class="headerlink" title="创建CPU中的数据结构体"></a>创建CPU中的数据结构体</h2><h3 id="FShaderParametersMetadata"><a href="#FShaderParametersMetadata" class="headerlink" title="FShaderParametersMetadata"></a>FShaderParametersMetadata</h3><p>这是一个4.22的新类，4.21有一个类似的结构体FUniformBufferStruct。4.22中可以在ShaderParameterMetadata.h中找到这个类。<br>FShaderParametersMetadata是一个储存了多个着色器参数的集合或容器。该容器可以储存不同数据类型的参数。每个参数都是一个成员，可以是矩阵、向量、数组或者纹理。<br>（提示：FShaderParameter.h中还定义了另外一个着色器参数系统。有FShaderParameter, FShaderResourceParameter, FShaderUniformBufferParameter等等。依然可以在单独的着色器中使用，如在LightRendering.cpp中一样。）<br>如果要定义一组着色器参数，可以用宏来声明这些元数据，这是将它们放进UniformBuffer的快捷办法。</p>
+<h3 id="ShaderParameterMacros-h"><a href="#ShaderParameterMacros-h" class="headerlink" title="ShaderParameterMacros.h"></a>ShaderParameterMacros.h</h3><p>这个头文件中包含了一些声明参数结构体的宏。比如BEGIN_GLOBAL_SHADER_PARAMETER_STRUCT()和END_GLOBAL_SHADER_PARAMETER_STRUCT()。这两个宏创建了一个类作为ParameterMetadata的壳，如：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Begin Macro:</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">STRUCT_NAME</span> &#123;</span></span><br><span class="line"><span class="keyword">static</span> Metadata;</span><br><span class="line">CreateUniformBuffer() (when declare as GLOBAL)</span><br><span class="line">...</span><br><span class="line">Parameter Macro: <span class="function">Insert all <span class="title">members</span> <span class="params">(Parameter)</span></span></span><br><span class="line">...</span><br><span class="line"><span class="comment">// End:</span></span><br><span class="line">some ending stuff + &#125;</span><br></pre></td></tr></table></figure>
+<p>对于全局的参数结构体，cpp中需要添加另外一个宏： IMPLEMENT_GLOBAL_SHADER_PARAMETER_STRUCT(FMyParameterStruct, “MyShaderBindingName”);<br>这个宏将静态的元数据放入一个全局的容器，扩展后的宏类似下方：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FShaderParametersMetadata <span class="title">StructTypeName::Metadata</span><span class="params">(...)</span></span>;</span><br><span class="line">=&gt; FShaderParametersMetadata(..) &#123; Add-Self-To-Global-Container &#125;</span><br></pre></td></tr></table></figure>
+<p>现在有了元数据的壳，可以开始使用SHADER_PARAMETER(Type, Name) 添加一些参数到壳中，用类型和名称创建一个成员，然后添加该成员到元数据的成员数组中。<br>（提示：有两个版本的声明：GLOBAL和LOCAL，区别是GLOBAL会在类中创建一个UniformBuffer并且所有成员会放进这个缓冲中，另外GLOBAL会将元数据保存在全局的map和list中。而LOCAL方式不会创建内在的UniformBuffer，所以不用调用IMPLEMENT_宏。)<br>##案例：Primitive Uniform, View Uniform<br>可以参考一下PrimitiveUniform和ViewUniform，两个最重要的UniformShaderParameters。</p>
+<h3 id="PrimitiveUniformShaderParameters-h"><a href="#PrimitiveUniformShaderParameters-h" class="headerlink" title="PrimitiveUniformShaderParameters.h"></a>PrimitiveUniformShaderParameters.h</h3><p>该头文件中声明了一个FPrimitiveUniformShaderParameters的结构体。之所以比较重要是因为在检索着色器代码的时候经常会看到”Primitive”或”GetPrimitiveData()“这样的变量，都是来自这个uniform结构体的。它保存了一个图元（或图元组件）的信息，包括LocalToWorld, WorldToLocal等等。<br><img src="/blog/2020/04/23/ue4uniform/primUniform.png" alt="primUniform"></p>
+<h3 id="FViewUniformShaderParameters-SceneView-h"><a href="#FViewUniformShaderParameters-SceneView-h" class="headerlink" title="FViewUniformShaderParameters(SceneView.h)"></a>FViewUniformShaderParameters(SceneView.h)</h3><p>可以认为这是当前视图相关的场景信息，包括相机的信息，游戏时间或者其他渲染需要的信息。这也是一个适合添加自定义全局Uniform参数的地方。在这个ShaderParameters中，<br><img src="/blog/2020/04/23/ue4uniform/viewUniform.png" alt="viewUniform"></p>
+<p>4.22加入了StructuredBuffer类型，可以传递数组进StructuredBuffer，名称为PrimitiveSceneData的Buffer包含所有GPU实例化的图元数据。<br><img src="/blog/2020/04/23/ue4uniform/newUniform.png" alt="newUniform"></p>
+<h3 id="IMPLEMENT-Macro-SceneView-cpp"><a href="#IMPLEMENT-Macro-SceneView-cpp" class="headerlink" title="IMPLEMENT_Macro(SceneView.cpp)"></a>IMPLEMENT_Macro(SceneView.cpp)</h3><p>上文提到过，实现宏创建元数据并且保存到全局的容器中。另外，这个宏也会帮助着色器编译器为GPU生成着色器代码。例如着色器编译器会生成一个”cbuffer Primitive{}”和”cbuffer View{}”，名称是传进宏里的名称。cbuffer的内容也是从FPrimitiveUniformShaderParameters或FViewUniformShaderParameters反射的。<br><img src="/blog/2020/04/23/ue4uniform/reflection.png" alt="reflection"></p>
+<p>（提示：当不支持自动实例化时，就会使用cubuffer Primitive，因此每个Drawcall现在的图元会绑定它的UniformBuffer到cbuffer。当自动实例化开启是，就不使用这个cbuffer了，而是使用ViewUniform中的StructuredArray”PrimitiveSceneData” 。）</p>
+<h2 id="GPU：生成着色器代码"><a href="#GPU：生成着色器代码" class="headerlink" title="GPU：生成着色器代码"></a>GPU：生成着色器代码</h2><p>之前讨论过，cbuffer结构中的着色器代码在任何.ush文件中都没有预先定义，它们是在编译着色器的时候生成的。下面大致看下原理。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//////////////////////</span></span><br><span class="line"><span class="comment">// ShaderCompiler.cpp</span></span><br><span class="line"><span class="comment">//////////////////////</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">GlobalBeginCompileShader</span><span class="params">(…)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">   …</span><br><span class="line">   <span class="comment">// 设置编译标识，添加任务到队列，编译器稍后会调用该任务</span></span><br><span class="line">   NewJobs.Add(NewJob);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//////////////////////////</span></span><br><span class="line"><span class="comment">// ShaderCompileWorker.cpp</span></span><br><span class="line"><span class="comment">//////////////////////////</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">ProcessCompilationJob</span><span class="params">(…)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">   ...</span><br><span class="line">   <span class="comment">// 调用ShaderFormatD3D.cpp::CompileShader() (D3D)</span></span><br><span class="line">   Compiler-&gt;CompileShader(…);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">////////////////////////</span></span><br><span class="line"><span class="comment">// D3DShaderCompiler.cpp</span></span><br><span class="line"><span class="comment">////////////////////////</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">CompileShader_Windows_SM5</span><span class="params">(…)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">   …</span><br><span class="line">   CompileD3DShader(…);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">CompileD3DShader</span><span class="params">(…)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">   …</span><br><span class="line">   <span class="keyword">if</span> (Input.RootParameterBindings.Num())</span><br><span class="line">   &#123;</span><br><span class="line">      <span class="comment">// 生成全局ShaderParameters的cbuffer代码，将字符串放在PreprocessedShaderSource中</span></span><br><span class="line">      MoveShaderParametersToRootConstantBuffer(Input, PreprocessedShaderSource);</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="comment">// 处理字符串：修改代码便于从"cbuffer.memberData"到"cbuffer_memberData"的代码允许cbuffer访问。</span></span><br><span class="line">   RemoveUniformBuffersFromSource(Input.Environment, PreprocessedShaderSource);</span><br><span class="line">   …</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>着色器代码是在MoveShaderParametersToRootConstantBuffer()中生成的，然后RemoveUniformBuffersFromSource()会对着色器代码进行调整。[cbuffer_name].[dataMember]会转化成[cbuffer_name]_[dataMember]，例如View.LocalToWorld会变成View_LocalToWorld。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ShaderCompilerCommon.cpp:</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">MoveShaderParametersToRootConstantBuffer</span><span class="params">(…)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">   …</span><br><span class="line">   <span class="comment">/* Print the string "cbuffer &#123;…&#125;" , but looks like this is still an intermediate code, </span></span><br><span class="line"><span class="comment">      the string will be proccessed later again, but I don't trace too much in this part */</span></span><br><span class="line">   <span class="comment">// 输出字符串"cbuffer&#123;...&#125;", 但貌似只是过渡，后面字符串还会被处理一次。</span></span><br><span class="line">   FString NewShaderCode = FString::Printf(</span><br><span class="line">      TEXT(<span class="string">"cbuffer %s\r\n"</span>)</span><br><span class="line">      TEXT(<span class="string">"&#123;\r\n"</span>)</span><br><span class="line">      TEXT(<span class="string">"%s"</span>)</span><br><span class="line">      TEXT(<span class="string">"&#125;\r\n\r\n%s"</span>),</span><br><span class="line">      FShaderParametersMetadata::kRootUniformBufferBindingName,</span><br><span class="line">      *RootCBufferContent,</span><br><span class="line">      *PreprocessedShaderSource);</span><br><span class="line">   PreprocessedShaderSource = MoveTemp(NewShaderCode);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 交叉编译器还不支持结构体初始化，用名称替换所有的uniform缓冲结构体成员的引用。</span></span><br><span class="line"><span class="comment">// 例如View.WorldToClip变成View_WorldToClip，移除结构体的依赖。</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">RemoveUniformBuffersFromSource</span><span class="params">(…)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">   …</span><br><span class="line">     <span class="comment">/* 'OpaqueBasePass.Shared.Reflection .SkyLightCubemapBrightness' -&gt;    </span></span><br><span class="line"><span class="comment">      'OpaqueBasePass_Shared_Reflection_SkyLightCubemapBrightness ' */</span></span><br><span class="line">   …</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="生成的着色器代码"><a href="#生成的着色器代码" class="headerlink" title="生成的着色器代码"></a>生成的着色器代码</h3><p>下方的两个文件在vs中是找不到的，因为它们是在编译时自动生成的。但是，可以修改着色器编译器设置来显示debug信息。在ConsoleVariables.ini中添加r.Shaders.Optimize=0和r.Shaders.KeepDebugInfo=1。然后就可以用RenderDoc抓帧查看资源包括着色器代码。<br>在View.ush和Primitive.ush中，可以看到cbuffer的内容与C++宏声明的着色器参数是一一对应的，而变量的前缀则是结构体的名称。<br><img src="/blog/2020/04/23/ue4uniform/cbufferView.png" alt="cbufferView"> <img src="/blog/2020/04/23/ue4uniform/cbufferPrim.png" alt="cbufferPrim"></p>
+<h2 id="更新和绑定缓冲"><a href="#更新和绑定缓冲" class="headerlink" title="更新和绑定缓冲"></a>更新和绑定缓冲</h2><p>更新缓冲和绑定缓冲是不同的。更新需要获取参数的数据然后更新数据到UniformBuffer；绑定缓冲是告诉着色器我们将要使用哪些缓冲。例如，我们有十个UniformBuffer，它们是不同Views, Primitivies等等的缓冲，它们会在任意的drawcall前更新。但是渲染一个模型时，如果着色器只需要十个中的两个，只需要绑定其中的两个缓冲到着色器。</p>
+<h3 id="SceneRendering-cpp"><a href="#SceneRendering-cpp" class="headerlink" title="SceneRendering.cpp"></a>SceneRendering.cpp</h3><p>不同的uniform参数可以有自己的更新管线，所以它们可以在不同的地方更新。这里会展示一下更新ViewUniformBufferParameter的位置。<br>从DeferredShadingRenderer.cpp::Render()可以追踪到InitViews()，最后到SceneRendering.cpp::SetupUniformBufferParameters()，此处设置了FViewUniformBufferParameter的数据。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* SceneRendering.cpp */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">FViewInfo::SetupUniformBufferParameters</span><span class="params">(…)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">   …</span><br><span class="line">   SetupCommonViewUniformBufferParameters(…);</span><br><span class="line">   …</span><br><span class="line">&#125;<span class="comment">/* SceneView.cpp */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">FSceneView::SetupCommonViewUniformBufferParameters</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;…&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="ClobalShader-h"><a href="#ClobalShader-h" class="headerlink" title="ClobalShader.h"></a>ClobalShader.h</h3><p>这是绑定缓冲的地方，同样地，不同的渲染pass可以在不同的地方绑定缓冲。发送drawcall的时候缓冲绑定几乎已经完成。因为绑定缓冲意味着链接缓冲到着色器，所以必须同时传递shaderRHI和缓冲到函数中。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">SetParameters</span><span class="params">(…, ShaderRHI, ViewUniformBuffer)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">   …</span><br><span class="line">   SetUniformBufferParameter(…, ShaderRHI, …, ViewUniformBuffer);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="D3D11StateCachePrivate-h"><a href="#D3D11StateCachePrivate-h" class="headerlink" title="D3D11StateCachePrivate.h"></a>D3D11StateCachePrivate.h</h3><p>SetUniformBufferParameter()最终会来到InternalSetSetConstantBuffer()函数，这个函数会调用D3D11 API [Type]SetConstantBuffers到一个顶点/外壳/域/几何/像素/计算着色器。绑定工作在此时完成。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">D3D11_STATE_CACHE_INLINE <span class="keyword">void</span> <span class="title">InternalSetSetConstantBuffer</span><span class="params">(…)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">   …</span><br><span class="line">   <span class="keyword">case</span> SF_Vertex: Direct3DDeviceIMContext-&gt;VSSetConstantBuffers(…);</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">   …&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="添加Uniform控制参数"><a href="#添加Uniform控制参数" class="headerlink" title="添加Uniform控制参数"></a>添加Uniform控制参数</h2><h3 id="添加参数"><a href="#添加参数" class="headerlink" title="添加参数"></a>添加参数</h3><p>因为要向View添加一个全局uniform，所以在SceneView.h添加一个VIEW_UNIFORM_BUFFER_MEMBER。<br><img src="/blog/2020/04/23/ue4uniform/addMember.png" alt="addMember"></p>
+<h3 id="更新参数值"><a href="#更新参数值" class="headerlink" title="更新参数值"></a>更新参数值</h3><p>可以借用SkyLightComponent和Proxy来存放自定义的uniform，在SetupUniformBufferParameters()中可以把用户编辑过的值传到ViewUniform。<br>SceneRendering.cpp：<br><img src="/blog/2020/04/23/ue4uniform/attachSky.png" alt="attachSky"></p>
+<p>添加一个新的UPROPERTY”MyCustomClobalUniform”到SceneManagement.h<br><img src="/blog/2020/04/23/ue4uniform/p1.png" alt="p1"></p>
+<p>添加相应的组件变量在SkyLightSceneProxy中——“MyCustomGlobalUniform”。在代理的构造函数中，复制SkyLightComponent的值。<br>SceneManagement.h：<br><img src="/blog/2020/04/23/ue4uniform/p2.png" alt="p2"> <img src="/blog/2020/04/23/ue4uniform/p3.png" alt="p3"></p>
+<h3 id="在着色器代码中访问参数"><a href="#在着色器代码中访问参数" class="headerlink" title="在着色器代码中访问参数"></a>在着色器代码中访问参数</h3><p>在.ush或.usf文件或材质编辑器的Custom节点中都可以使用View.TestConstantUniform来调用该数值了，并且可以在天光组件的参数面板中修改该数值进行全局控制。<br><img src="/blog/2020/04/23/ue4uniform/p4.png" alt="p4"> <img src="/blog/2020/04/23/ue4uniform/p5.png" alt="p5"></p>
+<h2 id="创建材质节点"><a href="#创建材质节点" class="headerlink" title="创建材质节点"></a>创建材质节点</h2><h3 id="添加节点类"><a href="#添加节点类" class="headerlink" title="添加节点类"></a>添加节点类</h3><p>在引擎的\Source\Runtime\Engine\Classes\Materials 路径下存放了材质编辑器的所有节点源文件。每个节点都有自己的UMaterialExpression类。所以同样在此路径创建一个头文件MaterialExpressionMyGlobalUniform.h。因为此案例只是一个向量数据，可以拷贝DeltaTime的节点。<br>确保添加完头文件后重新生成sln，这样可以自动生成.generated.h文件，否则会编译失败。<br><img src="/blog/2020/04/23/ue4uniform/p6.png" alt="p6"></p>
+<p>然后在MaterialExpressions.cpp中实现它的构造函数<br><img src="/blog/2020/04/23/ue4uniform/p7.png" alt="p7"></p>
+<h3 id="节点的编译器设置"><a href="#节点的编译器设置" class="headerlink" title="节点的编译器设置"></a>节点的编译器设置</h3><p>在MaterialCompiler.h中添加MyCustomUniform()方法。<br><img src="/blog/2020/04/23/ue4uniform/p8.png" alt="p8"> <img src="/blog/2020/04/23/ue4uniform/p9.png" alt="p9"></p>
+<p>在HLSLMaterialTranslator.h中，才是MaterialCompiler真正起作用的地方。调用AddInlinedCodeChunk(DATA_TYPE, CODE_STRING)来实现。<br><img src="/blog/2020/04/23/ue4uniform/p10.png" alt="p10"></p>
+<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><p>保存代码，重新成成sln工程，编译并打开引擎。<br><img src="/blog/2020/04/23/ue4uniform/p11.png" alt="p11"></p>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>总要恰饭的嘛</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/blog/images/wechatpay.png" alt="Alex Tsui 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/blog/images/alipay.jpg" alt="Alex Tsui 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/blog/tags/UE4/" rel="tag"><i class="fa fa-tag"></i> UE4</a>
+              <a href="/blog/tags/%E6%9D%90%E8%B4%A8/" rel="tag"><i class="fa fa-tag"></i> 材质</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/blog/2020/04/16/usf424/" rel="prev" title="UE4.24 材质Custom节点链接.usf文件">
+      <i class="fa fa-chevron-left"></i> UE4.24 材质Custom节点链接.usf文件
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/blog/2020/04/25/ue4addshadingmodel/" rel="next" title="UE4.22+ 添加自定义卡通着色模型">
+      UE4.22+ 添加自定义卡通着色模型 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#创建CPU中的数据结构体"><span class="nav-number">1.</span> <span class="nav-text">创建CPU中的数据结构体</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#FShaderParametersMetadata"><span class="nav-number">1.1.</span> <span class="nav-text">FShaderParametersMetadata</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ShaderParameterMacros-h"><span class="nav-number">1.2.</span> <span class="nav-text">ShaderParameterMacros.h</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#PrimitiveUniformShaderParameters-h"><span class="nav-number">1.3.</span> <span class="nav-text">PrimitiveUniformShaderParameters.h</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#FViewUniformShaderParameters-SceneView-h"><span class="nav-number">1.4.</span> <span class="nav-text">FViewUniformShaderParameters(SceneView.h)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IMPLEMENT-Macro-SceneView-cpp"><span class="nav-number">1.5.</span> <span class="nav-text">IMPLEMENT_Macro(SceneView.cpp)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#GPU：生成着色器代码"><span class="nav-number">2.</span> <span class="nav-text">GPU：生成着色器代码</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#生成的着色器代码"><span class="nav-number">2.1.</span> <span class="nav-text">生成的着色器代码</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#更新和绑定缓冲"><span class="nav-number">3.</span> <span class="nav-text">更新和绑定缓冲</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SceneRendering-cpp"><span class="nav-number">3.1.</span> <span class="nav-text">SceneRendering.cpp</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ClobalShader-h"><span class="nav-number">3.2.</span> <span class="nav-text">ClobalShader.h</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#D3D11StateCachePrivate-h"><span class="nav-number">3.3.</span> <span class="nav-text">D3D11StateCachePrivate.h</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#添加Uniform控制参数"><span class="nav-number">4.</span> <span class="nav-text">添加Uniform控制参数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#添加参数"><span class="nav-number">4.1.</span> <span class="nav-text">添加参数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#更新参数值"><span class="nav-number">4.2.</span> <span class="nav-text">更新参数值</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#在着色器代码中访问参数"><span class="nav-number">4.3.</span> <span class="nav-text">在着色器代码中访问参数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#创建材质节点"><span class="nav-number">5.</span> <span class="nav-text">创建材质节点</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#添加节点类"><span class="nav-number">5.1.</span> <span class="nav-text">添加节点类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#节点的编译器设置"><span class="nav-number">5.2.</span> <span class="nav-text">节点的编译器设置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#测试"><span class="nav-number">6.</span> <span class="nav-text">测试</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Alex Tsui"
+      src="/blog/images/avatar.png">
+  <p class="site-author-name" itemprop="name">Alex Tsui</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/blog/archives/">
+        
+          <span class="site-state-item-count">3</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/blog/categories/">
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/blog/tags/">
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2N1aWhvbmd6aGkxOTkx" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;cuihongzhi1991"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS9BbGV4VHN1aUNO" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;AlexTsuiCN"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+      <!--tag cloud-->
+      
+      <script type="text/javascript" charset="utf-8" src="/blog/js/tagcloud.js"></script>
+      <script type="text/javascript" charset="utf-8" src="/blog/js/tagcanvas.js"></script>
+        <div class="widget-wrap">
+          <h3 class="widget-title">Tag Cloud</h3>
+          <div id="myCanvasContainer" class="widget tagcloud">
+            <canvas width="250" height="250" id="resCanvas" style="width:100%">
+              <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/UE4/" rel="tag">UE4</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%8D%A1%E9%80%9A%E7%9D%80%E8%89%B2/" rel="tag">卡通着色</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%9D%90%E8%B4%A8/" rel="tag">材质</a><span class="tag-list-count">3</span></li></ul>
+            </canvas>
+          </div>
+        </div>
+      
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Alex Tsui</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/blog/lib/anime.min.js"></script>
+  <script src="/blog/lib/velocity/velocity.min.js"></script>
+  <script src="/blog/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/blog/js/utils.js"></script>
+
+<script src="/blog/js/motion.js"></script>
+
+
+<script src="/blog/js/schemes/pisces.js"></script>
+
+
+<script src="/blog/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://alextsui.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://cuihongzhi1991.github.io/2020/04/23/ue4uniform/";
+    this.page.identifier = "2020/04/23/ue4uniform/";
+    this.page.title = "UE4.22+ 添加Uniform";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://alextsui.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+</body>
+</html>
