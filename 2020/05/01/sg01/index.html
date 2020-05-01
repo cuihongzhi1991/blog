@@ -35,11 +35,12 @@
 <meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/05.png">
 <meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/06.png">
 <meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/07.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/11.png">
 <meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/08.png">
 <meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/09.png">
 <meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/10.png">
 <meta property="article:published_time" content="2020-05-01T06:14:25.000Z">
-<meta property="article:modified_time" content="2020-05-01T16:47:56.413Z">
+<meta property="article:modified_time" content="2020-05-01T16:51:22.732Z">
 <meta property="article:author" content="Alex Tsui">
 <meta property="article:tag" content="球面高斯">
 <meta property="article:tag" content="光照贴图">
@@ -260,7 +261,7 @@ L_o(o,x) = \int_{\Omega}{} \frac{C_{diffuse}}{\pi}\cdot L_i(i,x)\cdot\cos(\theta
 <p>很明显这是错误的，因为兰伯特漫反射BRDF是常量项，可以从积分中提出来，但镜面反射BRDF是与入射光方向和视线方向有关的，不能从积分中提出来。</p>
 <h2 id="球谐函数"><a href="#球谐函数" class="headerlink" title="球谐函数"></a>球谐函数</h2><p>球谐函数(Spherical Harmonics, SH)是实时图形一种流行的工具，通常作为在离散的探针位置存储间接光照近似值的方式。核心就是在球面上用一系列系数(1个、4个、9个、16个、n*n个)近似出一个关于方向(方向定义在球面上)的分布函数。就像使用一个方向向量从一张立方体贴图上获取特定的值。使用低阶的球谐函数只能表示非常低频的信号，下图使用27个系数(RGB每通道9个系数)将HDR图投影到L2球谐函数上。<br><img src="/blog/2020/05/01/sg01/06.png" alt><img src="/blog/2020/05/01/sg01/07.png" alt></p>
 <p>对于辐射度来讲，低频的球谐函数非常适合。相对于余弦项的入射辐射率积分有效地充当了低通滤波器，非常适合用来与球谐函数去逼近辐射度。如果将探针位置或光照贴图的纹素的辐射度投影到球谐函数上，就可以进行球谐查找了(lookup)。通过与系数的点积等一些计算就可以得到球面上任意方向的辐射度，就可以在空间中得到像《半条命2》中使用反射率贴图和法线贴图与正交基函数计算获得变化的效果。</p>
-<p>事实证明，用球谐函数从入射辐照亮度计算辐射度很有用，因为球谐函数表示低频信号是很高效的，在频域中进行简单的乘法就可以完成卷积。在空间域中，与立方体贴图的卷积是$n^{2}$的运算，包含来自辐射率立方体贴图的很多样本。</p>
+<p>事实证明，用球谐函数从入射辐照亮度计算辐射度很有用，因为球谐函数表示低频信号是很高效的，在频域中进行简单的乘法就可以完成卷积。在空间域中，与立方体贴图的卷积是$n^{2}$的运算，包含来自辐射率立方体贴图的很多样本。下图为L2球谐函数探针作为漫反射光源照亮的兔子模型。<br><img src="/blog/2020/05/01/sg01/11.png" alt></p>
 <p>因此球谐函数近似于辐射度，并且可以在运行时将辐射率转化为辐射度。在探针或光照贴图中存储辐射率的近似值而不是辐射率的近似值(虽然是模糊的版本)，这样的低频信号与镜面反射BRDF的乘积进行积分来得到镜面反射。如果用球谐函数近似辐射度，那么也需要用球谐函数近似BRDF。</p>
 <p>然而基于微平面理论的BRDF比兰伯特漫反射BRDF复杂得多。对于漫反射光照，无论材质和观察方向如何，余弦波瓣都是相同的。但是镜面波瓣根据观察方向、材质的粗糙度以及F0的菲尼尔项的不同而变化。本来使用查找表(lookup table,LUT)需要四个参数(观察方向是二维的)，但《光环3》中针对球谐函数镜面反射提出了更好的方法。当视线沿着局部Z轴(面法线)旋转时，镜面波瓣的形状不会变化，只有当视线与局部Z轴的夹角发生改变时波瓣形状才会改变。因此可以按局部X轴的所有视线方向预计算系数，这样产生的波瓣与实际的观察方向就可以对齐，如图所示：<br><img src="/blog/2020/05/01/sg01/08.png" alt></p>
 <p>下图展示了计算L2球谐函数光照贴图得到的间接镜面反射项。<br><img src="/blog/2020/05/01/sg01/09.png" alt></p>
