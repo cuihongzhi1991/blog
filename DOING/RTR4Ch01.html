@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
 <meta name="theme-color" content="#222">
 <meta name="generator" content="Hexo 4.2.0">
@@ -81,12 +81,12 @@
   .use-motion .logo-line-before i { left: initial; }
   .use-motion .logo-line-after i { right: initial; }
   </style>
-</noscript>
+</noscript><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
-  <div class="container use-motion">
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div class="container use-motion">
     <div class="headband"></div>
 
     <header class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -126,17 +126,17 @@
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/blog/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">4</span></a>
+    <a href="/blog/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">5</span></a>
 
   </li>
         <li class="menu-item menu-item-categories">
 
-    <a href="/blog/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">1</span></a>
+    <a href="/blog/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">2</span></a>
 
   </li>
         <li class="menu-item menu-item-tags">
 
-    <a href="/blog/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">4</span></a>
+    <a href="/blog/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">7</span></a>
 
   </li>
   </ul>
@@ -184,103 +184,78 @@
       
       
       <div class="post-body">
-          <p>《Real-Time Rendering 4th》出版于2018年，是实时渲染圣经的第四版。此版涵盖的内容延续以往的结构，知识点到为止，展开的并不多。所以根据书中的索引可以对某一方面进行深度学习和研究。</p>
-<a id="more"></a>
-
+          <p>《Real-Time Rendering 4th》出版于2018年，是实时渲染圣经的第四版。此版涵盖的内容延续以往的结构，知识点到为止，展开的并不多。所以根据书中的索引可以对某一方面进行深度学习和研究。<br><a id="more"></a></p>
 <p><img src="/blog/DOING/RTR4Ch01.htm/head.jpg" alt></p>
 <h2 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h2><p>实时渲染是计算机图形学交互性最强的领域。操作者做出操作或交互后可以立即得到反馈效果呈现在画面上，并根据产生的图像结果持续交互。这样一个操作与渲染的循环须有足够的计算速度才可以避免观察者看到多张不连贯的图像。图像显示速率以<strong>帧数/秒</strong>(FPS)或者<strong>赫兹</strong>(Hz)度量。每秒1帧几乎没有交互性；每秒6帧才有点交互性；游戏的目标是30、60、72或更高的FPS，例如游戏在VR头显设备运行时通常需要90FPS来最小化延迟避免产生眩晕感。<br>实时渲染比交互性更重要，实时渲染一般指创造三维图像。交互性和三维空间关系是实时渲染的充分条件。后来，三维图形的加速硬件（显卡）也成为了实时渲染的第三个元素。不仅是电脑，平板和手机现在也内置了图形处理器。<br>本书会着重提供可以加速和提升画面质量的方法，并且会描述加速算法和图形API的特性及限制。本书不会对每个话题深入讨论，而是展现其核心概念和专业术语，对最鲁棒和最实际的算法进行解释，并给出更多的拓展学习资料。</p>
 <h2 id="内容概括"><a href="#内容概括" class="headerlink" title="内容概括"></a>内容概括</h2><div class="note danger no-icon">
             <h3 id="第二章——图形渲染管线"><a href="#第二章——图形渲染管线" class="headerlink" title="第二章——图形渲染管线"></a>第二章——图形渲染管线</h3><p>将场景的数据化抽象描述转换成我们可以看到的实际画面的步骤就是实时渲染的核心。</p>
           </div>
-
 <div class="note primary no-icon">
             <h3 id="第三章——图形处理单元"><a href="#第三章——图形处理单元" class="headerlink" title="第三章——图形处理单元"></a>第三章——图形处理单元</h3><p>现代GPU使用固定方法与可编程单元的组合来实现渲染管线的各个步骤。</p>
           </div>
-
 <div class="note info no-icon">
             <h3 id="第四章——变换"><a href="#第四章——变换" class="headerlink" title="第四章——变换"></a>第四章——变换</h3><p>变换是修改物体位置、朝向、比例和形状的基本工具，也是修改相机位置和FOV的基本工具。</p>
           </div>
-
 <div class="note success no-icon">
             <h3 id="第五章——基础着色"><a href="#第五章——基础着色" class="headerlink" title="第五章——基础着色"></a>第五章——基础着色</h3><p>从讨论材质和灯光的含义开始，并实现写实或风格化的材质效果。另外还会介绍一些效果相关的话题，比如通过反走样、半透和伽马矫正得到质量更佳的图像。</p>
           </div>
-
 <div class="note warning no-icon">
             <h3 id="第六章——纹理"><a href="#第六章——纹理" class="headerlink" title="第六章——纹理"></a>第六章——纹理</h3><p>快速读取和在表面上显示图像的能力是实时渲染的强力工具之一。这个过程被称为纹理映射，有着很广泛的应用方法。</p>
           </div>
-
 <div class="note danger no-icon">
             <h3 id="第七章——阴影"><a href="#第七章——阴影" class="headerlink" title="第七章——阴影"></a>第七章——阴影</h3><p>给场景添加阴影既可以提升真实感也便于理解空间关系。本章会快速展示一下常用的计算阴影的算法。</p>
           </div>
-
 <div class="note primary no-icon">
             <h3 id="第八章——光和色彩"><a href="#第八章——光和色彩" class="headerlink" title="第八章——光和色彩"></a>第八章——光和色彩</h3><p>在呈现基于物理的渲染之前，需要理解如何量化光和色彩。在物理渲染过程结束后，需要转换结果为数值来展示效果，包括屏幕和观察环境的多种属性。</p>
           </div>
-
 <div class="note info no-icon">
             <h3 id="第九章——基于物理的着色"><a href="#第九章——基于物理的着色" class="headerlink" title="第九章——基于物理的着色"></a>第九章——基于物理的着色</h3><p>本章会透彻讲解对基于物理的着色。会介绍背后的物理现象、各种渲染材质的数学模型、混合材质和反走样的过滤方法。</p>
           </div>
-
 <div class="note success no-icon">
             <h3 id="第十章——局部照明"><a href="#第十章——局部照明" class="headerlink" title="第十章——局部照明"></a>第十章——局部照明</h3><p>探索更精准的光照算法。当光源具有特殊形状时是如何计算表面的着色。</p>
           </div>
-
 <div class="note warning no-icon">
             <h3 id="第十一章——全局照明"><a href="#第十一章——全局照明" class="headerlink" title="第十一章——全局照明"></a>第十一章——全局照明</h3><p>模拟灯光和场景多次交互的算法大大增加图像的真实性。会讨论直接和间接光遮蔽以及渲染漫反射和镜面反射表面的全局光照的方法，还有一些可信的统一实现方式。</p>
           </div>
-
 <div class="note danger no-icon">
             <h3 id="第十二章——图像效果"><a href="#第十二章——图像效果" class="headerlink" title="第十二章——图像效果"></a>第十二章——图像效果</h3><p>图形硬件擅长快速处理图像。会先介绍图像过滤和重映射技术，然后讨论几个流行的后期处理效果，如：镜头炫光、运动模糊和景深。</p>
           </div>
-
 <div class="note primary no-icon">
             <h3 id="第十三章——物体的其他描述形式"><a href="#第十三章——物体的其他描述形式" class="headerlink" title="第十三章——物体的其他描述形式"></a>第十三章——物体的其他描述形式</h3><p>三角形不总是描述物体最快和最真实的方式。还有一些基于图像、点云、体素和其他采样集合的方式都有各自的优点。</p>
           </div>
-
 <div class="note info no-icon">
             <h3 id="第十四章——体积和半透渲染"><a href="#第十四章——体积和半透渲染" class="headerlink" title="第十四章——体积和半透渲染"></a>第十四章——体积和半透渲染</h3><p>重现体积感材质的理论和实践，他们是如何与光照进行交互的。从宏观的大范围氛围效果到微观如发丝的光照散射都有模拟。</p>
           </div>
-
 <div class="note success no-icon">
             <h3 id="第十五章——非真实感渲染"><a href="#第十五章——非真实感渲染" class="headerlink" title="第十五章——非真实感渲染"></a>第十五章——非真实感渲染</h3><p>让场景看起来真实只是渲染的方法之一。还可以探讨其他类型，如卡通着色、水彩风格等，线条和文本的生成技术也会在此讨论。</p>
           </div>
-
 <div class="note warning no-icon">
             <h3 id="第十六章——多边形技术"><a href="#第十六章——多边形技术" class="headerlink" title="第十六章——多边形技术"></a>第十六章——多边形技术</h3><p>几何数据来源广泛，有时为了快速渲染和提高渲染质量会修改数据。本章会介绍描述和压缩多边形数据技术的多个方面。</p>
           </div>
-
 <div class="note danger no-icon">
             <h3 id="第十七章——曲线和曲面"><a href="#第十七章——曲线和曲面" class="headerlink" title="第十七章——曲线和曲面"></a>第十七章——曲线和曲面</h3><p>更复杂的表面描述方式提供了其他的优点，比如可以在质量和渲染速度上做取舍、更加细致的描述以及生成平滑的表面。</p>
           </div>
-
 <div class="note primary no-icon">
             <h3 id="第十八章——管线优化"><a href="#第十八章——管线优化" class="headerlink" title="第十八章——管线优化"></a>第十八章——管线优化</h3><p>当应用程序使用高效的算法运行时，可以使用各种优化技术更快的运行。找到瓶颈并且决定如何解决瓶颈是本章的主题。多重处理也会在此讨论。</p>
           </div>
-
 <div class="note info no-icon">
             <h3 id="第十九章——加速算法"><a href="#第十九章——加速算法" class="headerlink" title="第十九章——加速算法"></a>第十九章——加速算法</h3><p>不仅能运行，还要更快速。本章涵盖了各种剔除和LOD渲染方法。</p>
           </div>
-
 <div class="note success no-icon">
             <h3 id="第二十章——高效的着色方式"><a href="#第二十章——高效的着色方式" class="headerlink" title="第二十章——高效的着色方式"></a>第二十章——高效的着色方式</h3><p>在场景中，大量的光源会导致性能的下降。在片段可见性未知的情况下对其完整的渲染是浪费的。此处会探索一些可以解决这种低效着色的办法。</p>
           </div>
-
 <div class="note warning no-icon">
             <h3 id="第二十一章——虚拟现实和增强现实"><a href="#第二十一章——虚拟现实和增强现实" class="headerlink" title="第二十一章——虚拟现实和增强现实"></a>第二十一章——虚拟现实和增强现实</h3><p>该领域有其特殊的挑战和技术来实现真实、快速并且稳定的图像。</p>
           </div>
-
 <div class="note danger no-icon">
             <h3 id="第二十二章——相交测试方法"><a href="#第二十二章——相交测试方法" class="headerlink" title="第二十二章——相交测试方法"></a>第二十二章——相交测试方法</h3><p>相交测试对渲染、玩家交互和碰撞检测都十分重要。本章会介绍很多几何体相交测试的高效算法。</p>
           </div>
-
 <div class="note primary no-icon">
             <h3 id="第二十三章——图形硬件"><a href="#第二十三章——图形硬件" class="headerlink" title="第二十三章——图形硬件"></a>第二十三章——图形硬件</h3><p>本章会介绍颜色深度、帧缓冲和基础的架构类型。给出了一个典型的GPU实例分析。</p>
           </div>
-
 <div class="note info no-icon">
             <h3 id="第二十四章——未来"><a href="#第二十四章——未来" class="headerlink" title="第二十四章——未来"></a>第二十四章——未来</h3><p>让我们猜猜看。</p>
           </div>
-
 <h2 id="符号和定义"><a href="#符号和定义" class="headerlink" title="符号和定义"></a>符号和定义</h2><p>TO DO</p>
 <h3 id="数学符号"><a href="#数学符号" class="headerlink" title="数学符号"></a>数学符号</h3><p>TO DO</p>
 <h3 id="几何定义"><a href="#几何定义" class="headerlink" title="几何定义"></a>几何定义</h3><p>TO DO</p>
@@ -370,20 +345,20 @@
       <div class="site-state-item site-state-posts">
           <a href="/blog/archives/">
         
-          <span class="site-state-item-count">4</span>
+          <span class="site-state-item-count">5</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/blog/categories/">
           
-        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-count">2</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/blog/tags/">
           
-        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-count">7</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -413,7 +388,7 @@
           <h3 class="widget-title">Tag Cloud</h3>
           <div id="myCanvasContainer" class="widget tagcloud">
             <canvas width="250" height="250" id="resCanvas" style="width:100%">
-              <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/UE4/" rel="tag">UE4</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%8D%A1%E9%80%9A%E7%9D%80%E8%89%B2/" rel="tag">卡通着色</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%9D%90%E8%B4%A8/" rel="tag">材质</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%B8%B2%E6%9F%93%E7%AE%A1%E7%BA%BF/" rel="tag">渲染管线</a><span class="tag-list-count">3</span></li></ul>
+              <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/UE4/" rel="tag">UE4</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%85%89%E7%85%A7%E8%B4%B4%E5%9B%BE/" rel="tag">光照贴图</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%8D%A1%E9%80%9A%E7%9D%80%E8%89%B2/" rel="tag">卡通着色</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" rel="tag">图形学</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%9D%90%E8%B4%A8/" rel="tag">材质</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%B8%B2%E6%9F%93%E7%AE%A1%E7%BA%BF/" rel="tag">渲染管线</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E7%90%83%E9%9D%A2%E9%AB%98%E6%96%AF/" rel="tag">球面高斯</a><span class="tag-list-count">1</span></li></ul>
             </canvas>
           </div>
         </div>
@@ -494,6 +469,8 @@
 
   
 
+  
+
 <script>
   function loadCount() {
     var d = document, s = d.createElement('script');
@@ -523,7 +500,7 @@
       (d.head || d.body).appendChild(s);
     }
   });
-</script>
+</script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 
 </body>
 </html>

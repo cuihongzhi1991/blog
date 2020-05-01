@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/blog/images/apple-touch-icon-alex.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/blog/images/favicon-32x32-alex.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/blog/images/favicon-16x16-alex.png">
+  <link rel="mask-icon" href="/blog/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="MtLzwmTs3a2ZnDBFhocKgVUp2SOlNOwwXgBdgGt482I">
+
+<link rel="stylesheet" href="/blog/css/main.css">
+
+
+<link rel="stylesheet" href="/blog/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"cuihongzhi1991.github.io","root":"/blog/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"disqus","storage":true,"lazyload":false,"nav":null,"activeClass":"disqus"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="球面高斯函数(Spherical Gaussian, SG)是比较冷门的话题，但Ready At Dawn工作室却对其情有独钟，并使用在自家的游戏引擎中。其效果也经《教团：1886》得到验证。本系列是由Ready At Dawn工作室的首席图形和引擎工程师Matt Pettineo编写在自己的博客。我将该系列的学习笔记记录于此，与大家分享。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="球面高斯函数01——光照贴图简史">
+<meta property="og:url" content="https://cuihongzhi1991.github.io/2020/05/01/sg01/index.html">
+<meta property="og:site_name" content="Alex Technical Art">
+<meta property="og:description" content="球面高斯函数(Spherical Gaussian, SG)是比较冷门的话题，但Ready At Dawn工作室却对其情有独钟，并使用在自家的游戏引擎中。其效果也经《教团：1886》得到验证。本系列是由Ready At Dawn工作室的首席图形和引擎工程师Matt Pettineo编写在自己的博客。我将该系列的学习笔记记录于此，与大家分享。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/01.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/02.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/03.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/04.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/05.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/06.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/07.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/08.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/09.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/10.png">
+<meta property="article:published_time" content="2020-05-01T06:14:25.000Z">
+<meta property="article:modified_time" content="2020-05-01T16:47:56.413Z">
+<meta property="article:author" content="Alex Tsui">
+<meta property="article:tag" content="球面高斯">
+<meta property="article:tag" content="光照贴图">
+<meta property="article:tag" content="图形学">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/01.png">
+
+<link rel="canonical" href="https://cuihongzhi1991.github.io/2020/05/01/sg01/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>球面高斯函数01——光照贴图简史 | Alex Technical Art</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/blog/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Alex Technical Art</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/blog/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/blog/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">5</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/blog/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">2</span></a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/blog/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">7</span></a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2N1aWhvbmd6aGkxOTkx" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cuihongzhi1991.github.io/2020/05/01/sg01/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/blog/images/avatar.png">
+      <meta itemprop="name" content="Alex Tsui">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Alex Technical Art">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          球面高斯函数01——光照贴图简史
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-05-01 14:14:25" itemprop="dateCreated datePublished" datetime="2020-05-01T14:14:25+08:00">2020-05-01</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/blog/categories/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" itemprop="url" rel="index"><span itemprop="name">图形学</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/blog/2020/05/01/sg01/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/05/01/sg01/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>球面高斯函数(Spherical Gaussian, SG)是比较冷门的话题，但Ready At Dawn工作室却对其情有独钟，并使用在自家的游戏引擎中。其效果也经《教团：1886》得到验证。本系列是由Ready At Dawn工作室的首席图形和引擎工程师<em><span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS9NeU5hbWVJc01KUA==">Matt Pettineo<i class="fa fa-external-link-alt"></i></span></em>编写在自己的<em><span class="exturl" data-url="aHR0cHM6Ly9teW5hbWVpc21qcC53b3JkcHJlc3MuY29tLzIwMTYvMTAvMDkvbmV3LWJsb2ctc2VyaWVzLWxpZ2h0bWFwLWJha2luZy1hbmQtc3BoZXJpY2FsLWdhdXNzaWFucy8=">博客<i class="fa fa-external-link-alt"></i></span></em>。我将该系列的学习笔记记录于此，与大家分享。<br><a id="more"></a></p>
+<p>原作者把球面高斯函数及其应用分为6篇介绍：<br><div class="note primary no-icon">
+            <ul><li>Part1-光照贴图简史</li><li>Part2-球面高斯函数101</li><li>Part3-从SG光源重建漫反射光照</li><li>Part4-从SG光源重建镜面反射光照</li><li>Part5-用SG函数近似辐射率和辐射度</li><li>Part6-Baking Lab的使用</li></ul>
+          </div><br>最后一部分是他制作的开源的光照贴图烘焙Demo的使用方法，暂且不纳入笔记范围。笔记将记录前五篇的主要内容。作为该系列的第一篇，会简单介绍一下研究<strong>球面高斯函数(Spherical Gaussians, SG)</strong>时需要的背景资料。重点讨论预烘焙的光照贴图或探针存储了什么信息，以及如何使用信息来计算漫反射或高光。</p>
+<p>开始前，可以看一下下文用到的术语符号：<br><div class="note danger no-icon">
+            <ul><li>$L_o$ -指向观察方向的出射光辐射率(radiance)</li><li>$L_i$ -表面入射点的入射光辐射率</li><li>o -观察方向(着色器光照计算中一般用V表示)</li><li>i  -光线入射方向(着色器光照计算中一般用L表示)</li><li>n -表面法向量</li><li>x -表面上某点的3D坐标</li><li>$\int_{\Omega}$ -半球积分</li><li>$\theta_i$ - 表面法线与入射光的夹角角度</li><li>$\theta_o$ - 表面法线与出射光的夹角角度</li><li>$f\left(\right)$ -BRDF</li></ul>
+          </div></p>
+<h2 id="早期方式——存储辐射度-irradiance"><a href="#早期方式——存储辐射度-irradiance" class="headerlink" title="早期方式——存储辐射度(irradiance)"></a>早期方式——存储辐射度(irradiance)</h2><p>自从有了带颜色的3D游戏开始就有了预先计算光照贴图的方法，一直延续到现在(2020年)。原理比较简单：为每个纹素预先计算光照数值，然后在游戏运行时对光照数值进行采样来计算表面的最终效果。虽然原理简单，但细节就比较讲究了。比如将“光照”存储在纹理中到底意味着什么？或者计算的到底是什么值？在最早期，从光照贴图中获取的数值只是简单的与材质的漫反射颜色相乘，然后直接输出颜色到屏幕上。暂且不考虑伽马矫正和sRGB转换等等。根据上面简单的描述，可以使用渲染公式来描述这种古老的方法。</p>
+<p>因为光照贴图每个纹素存储的都是单一的固定颜色值，所以可以不用考虑观察方向。仅使用简单的兰伯特漫反射BRDF即可。一般我们用以下的公式计算从一个入射点计算出射辐射率：</p>
+<script type="math/tex; mode=display">\begin{align}
+L_o(o,x) = \int_{\Omega}{}f(i,o,x)\cdot L_i(i,x)\cdot\cos(\theta_i)\cdot{d}\Omega \nonumber  
+\end{align}</script><p>如果用普通的漫反射BRDF(即$\frac{C_{diffuse}}{\pi}$)代替BRDF，那么就会变成：</p>
+<script type="math/tex; mode=display">\begin{align}
+L_o(o,x) = \int_{\Omega}{} \frac{C_{diffuse}}{\pi}\cdot L_i(i,x)\cdot\cos(\theta_i)\cdot{d}\Omega \nonumber  \\
+= \frac{C_{diffuse}}{\pi}\int_{\Omega}{}L_i(i,x)\cdot\cos(\theta_i)\cdot{d}\Omega \nonumber
+\end{align}</script><p>可以看到将右侧的常量项$\frac{C_{diffuse}}{\pi}$提到积分外，这样右侧复杂的积分运算就是预计算(pre-computed)的纹素了，然后在运行时用常量项与每个纹素值相乘就是最终的颜色了。右侧的积分计算的是入射光辐射度，因此光照贴图中存储的就是辐射度值。实际上大多数的游戏并没有在运行时应用$\frac{1}{\pi}$,因为这是个常数项，为了降低开销可以也将这个常数项预计算在光照贴图中，这样只剩$C_{diffuse}$是在运行时参与计算的。这种情形下，实际存储的就是反射率。换言之，可以认为存储的值是当$C_{diffuse}=1.0$时漫反射的反射率，即具有漫反射BRDF的表面最大出射光辐射率。</p>
+<h2 id="法线贴图"><a href="#法线贴图" class="headerlink" title="法线贴图"></a>法线贴图</h2><p>光照贴图的核心概念之一就是利用空间域中以不同速率存储的数据来重建表面的最终效果。简言之，使用一个纹素密度存储光照贴图，并与不同密度(一般更高)的反射率贴图(albedo map)结合。这样无需计算每个纹素的辐射度积分就可以保留高频细节。但如何让辐射度根据其他纹理贴图(不仅仅是反射率贴图)变化呢？为了满足这种需求，在2000年初法线贴图开始被广泛使用，但仅限于与精确光源(punctual light source)计算时使用。并且法线贴图对光照贴图不起作用，因为光照贴图只存储了单个辐射度的比例值，那么相比于直接光照区域，仅有环境光照(ambient lighting)的区域就非常的平整。如下图：<br><img src="/blog/2020/05/01/sg01/01.png" alt></p>
+<p>为了让光照贴图与法线贴图正确计算，光照贴图每个纹素不再存储单个标量值，而是辐射度的分布信息。法线贴图包含一定范围的方向分布信息，这些方向一般限制在表面上一个点的法线周围半球内。所以光照贴图存储的辐射度分布信息是定义在同一个半球内的。V社(Valve)使用自研的Source引擎在《半条命2》中最早使用了这种分布，被称为“辐射度法线贴图”。<br><img src="/blog/2020/05/01/sg01/02.png" alt></p>
+<p>V社修改了光照贴图烘焙器计算三个值而不是一个值，每个值都是通过投影辐射度到上图中某一个基向量(basis vector)上。游戏运行时，会基于法线贴图中的方向与三个基向量的夹角余弦值来混合三个光照贴图值从而得到辐射度值(通过开销很低的点积(dot product)就可以计算)。这样就可以根据法线贴图中的方向有效德改变辐射度，进而避免了仅有环境光的区域过于平整的问题。</p>
+<p>这个方式解决了静态物体的问题，对动态的物体和角色应用预计算的光照依然有问题。一些早期游戏(如《Quake》)用了一些技巧,例如在角色脚部位置采样光照贴图的数值，并使用该数值计算出环境光数值应用到整个模型上。而有些游戏的处理方式更粗糙，只把动态灯光和一个全局的环境光项结合使用。V社使用了更复杂的方法，将半球光照贴图基础扩展成由6个正交基向量形成的球面基础。<br><img src="/blog/2020/05/01/sg01/03.png" alt></p>
+<p>基向量与一个单位立方体的六个面朝向重合，V社称之为“环境立方体”。使用他们的基函数(basis functions)将辐射度投影到空间中一点周围的所有方向上(而不是面法线周围的半球上)，动态的模型可以对任意法线方向采样辐射度来计算漫反射光照。这种形式被称为<em>“光照探针”(lighting probe)</em>或简称<em>“探针”(probe)</em>。</p>
+<h2 id="镜面反射"><a href="#镜面反射" class="headerlink" title="镜面反射"></a>镜面反射</h2><p>通过V社提出的方法，可以使用高频的法线贴图与光照贴图进行计算得到漫反射光照。为了让画面更真实，还需要支持更加复杂的BRDF，包括受观察方向影响的镜面反射BRDF。《半条命2》通过预生成(pre-generating)的立方体贴图和手动摆放的探针来处理环境的镜面反射。这在现代游戏中也是十分常见的做法(额外添加了预过滤(pre-filtering)来近似微平面BRDF)。但立方体贴图会占用大量的内存空间，因此限制了镜面反射探针(specular probe)的密度，错误的视差(parallax)或遮挡自然会产生一些问题。下图中，由于错误的视差和遮挡，当使用预过滤的环境贴图计算环境镜面反射(environment specular)时，球的边缘反射了自己导致非常亮！<br><img src="/blog/2020/05/01/sg01/04.png" alt></p>
+<p>因此需要让光照贴图对镜面反射同样有影响。如果模仿漫反射BRDF，将镜面反射BRDF从积分中提出来，BRDF <em> Integrate(Lighting </em> cos(theta))，而不是原本的Integrate(BRDF <em> Lighting </em> cos(theta))，那么仅仅在观察方向与光照贴图基向量方向接近的时候才能看到些许镜面反射效果。下方示意图展示了改变公式后的效果。<br><img src="/blog/2020/05/01/sg01/05.png" alt></p>
+<p>很明显这是错误的，因为兰伯特漫反射BRDF是常量项，可以从积分中提出来，但镜面反射BRDF是与入射光方向和视线方向有关的，不能从积分中提出来。</p>
+<h2 id="球谐函数"><a href="#球谐函数" class="headerlink" title="球谐函数"></a>球谐函数</h2><p>球谐函数(Spherical Harmonics, SH)是实时图形一种流行的工具，通常作为在离散的探针位置存储间接光照近似值的方式。核心就是在球面上用一系列系数(1个、4个、9个、16个、n*n个)近似出一个关于方向(方向定义在球面上)的分布函数。就像使用一个方向向量从一张立方体贴图上获取特定的值。使用低阶的球谐函数只能表示非常低频的信号，下图使用27个系数(RGB每通道9个系数)将HDR图投影到L2球谐函数上。<br><img src="/blog/2020/05/01/sg01/06.png" alt><img src="/blog/2020/05/01/sg01/07.png" alt></p>
+<p>对于辐射度来讲，低频的球谐函数非常适合。相对于余弦项的入射辐射率积分有效地充当了低通滤波器，非常适合用来与球谐函数去逼近辐射度。如果将探针位置或光照贴图的纹素的辐射度投影到球谐函数上，就可以进行球谐查找了(lookup)。通过与系数的点积等一些计算就可以得到球面上任意方向的辐射度，就可以在空间中得到像《半条命2》中使用反射率贴图和法线贴图与正交基函数计算获得变化的效果。</p>
+<p>事实证明，用球谐函数从入射辐照亮度计算辐射度很有用，因为球谐函数表示低频信号是很高效的，在频域中进行简单的乘法就可以完成卷积。在空间域中，与立方体贴图的卷积是$n^{2}$的运算，包含来自辐射率立方体贴图的很多样本。</p>
+<p>因此球谐函数近似于辐射度，并且可以在运行时将辐射率转化为辐射度。在探针或光照贴图中存储辐射率的近似值而不是辐射率的近似值(虽然是模糊的版本)，这样的低频信号与镜面反射BRDF的乘积进行积分来得到镜面反射。如果用球谐函数近似辐射度，那么也需要用球谐函数近似BRDF。</p>
+<p>然而基于微平面理论的BRDF比兰伯特漫反射BRDF复杂得多。对于漫反射光照，无论材质和观察方向如何，余弦波瓣都是相同的。但是镜面波瓣根据观察方向、材质的粗糙度以及F0的菲尼尔项的不同而变化。本来使用查找表(lookup table,LUT)需要四个参数(观察方向是二维的)，但《光环3》中针对球谐函数镜面反射提出了更好的方法。当视线沿着局部Z轴(面法线)旋转时，镜面波瓣的形状不会变化，只有当视线与局部Z轴的夹角发生改变时波瓣形状才会改变。因此可以按局部X轴的所有视线方向预计算系数，这样产生的波瓣与实际的观察方向就可以对齐，如图所示：<br><img src="/blog/2020/05/01/sg01/08.png" alt></p>
+<p>下图展示了计算L2球谐函数光照贴图得到的间接镜面反射项。<br><img src="/blog/2020/05/01/sg01/09.png" alt></p>
+<p>使用球谐函数的方法有个常见的问题——“Ringing”现象。当一侧有强光时，在另一侧就会产生负的波瓣，其值就会非常低甚至是赋值。对于2D光照贴图不是大问题，因为光照贴图只与面法线的半球入射辐率有关。但对于存储了整个球体的辐射率或辐射度的探针来讲就会有问题。Peter-Pike Sloan提出了一个解决方案，将窗口函数(windowing function)应用于球谐函数的系数，过滤掉Ringing现象，但窗口函数会引入额外的模糊。下图分别展示了蒙特卡洛积分离线渲染结果、投影辐射率到L2球谐函数并计算辐射度产生Ringing现象、应用窗口函数后的效果修正。<br><img src="/blog/2020/05/01/sg01/10.png" alt></p>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>总要恰饭的嘛</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/blog/images/wechatpay.png" alt="Alex Tsui 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/blog/images/alipay.jpg" alt="Alex Tsui 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/blog/tags/%E7%90%83%E9%9D%A2%E9%AB%98%E6%96%AF/" rel="tag"><i class="fa fa-tag"></i> 球面高斯</a>
+              <a href="/blog/tags/%E5%85%89%E7%85%A7%E8%B4%B4%E5%9B%BE/" rel="tag"><i class="fa fa-tag"></i> 光照贴图</a>
+              <a href="/blog/tags/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" rel="tag"><i class="fa fa-tag"></i> 图形学</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/blog/2020/04/28/ueglobalshader/" rel="prev" title="UE4使用插件创建Global Shader">
+      <i class="fa fa-chevron-left"></i> UE4使用插件创建Global Shader
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#早期方式——存储辐射度-irradiance"><span class="nav-number">1.</span> <span class="nav-text">早期方式——存储辐射度(irradiance)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#法线贴图"><span class="nav-number">2.</span> <span class="nav-text">法线贴图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#镜面反射"><span class="nav-number">3.</span> <span class="nav-text">镜面反射</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#球谐函数"><span class="nav-number">4.</span> <span class="nav-text">球谐函数</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Alex Tsui"
+      src="/blog/images/avatar.png">
+  <p class="site-author-name" itemprop="name">Alex Tsui</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/blog/archives/">
+        
+          <span class="site-state-item-count">5</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/blog/categories/">
+          
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/blog/tags/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2N1aWhvbmd6aGkxOTkx" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;cuihongzhi1991"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS9BbGV4VHN1aUNO" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;AlexTsuiCN"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+      <!--tag cloud-->
+      
+      <script type="text/javascript" charset="utf-8" src="/blog/js/tagcloud.js"></script>
+      <script type="text/javascript" charset="utf-8" src="/blog/js/tagcanvas.js"></script>
+        <div class="widget-wrap">
+          <h3 class="widget-title">Tag Cloud</h3>
+          <div id="myCanvasContainer" class="widget tagcloud">
+            <canvas width="250" height="250" id="resCanvas" style="width:100%">
+              <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/UE4/" rel="tag">UE4</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%85%89%E7%85%A7%E8%B4%B4%E5%9B%BE/" rel="tag">光照贴图</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%8D%A1%E9%80%9A%E7%9D%80%E8%89%B2/" rel="tag">卡通着色</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" rel="tag">图形学</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%9D%90%E8%B4%A8/" rel="tag">材质</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%B8%B2%E6%9F%93%E7%AE%A1%E7%BA%BF/" rel="tag">渲染管线</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E7%90%83%E9%9D%A2%E9%AB%98%E6%96%AF/" rel="tag">球面高斯</a><span class="tag-list-count">1</span></li></ul>
+            </canvas>
+          </div>
+        </div>
+      
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Alex Tsui</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/blog/lib/anime.min.js"></script>
+  <script src="/blog/lib/velocity/velocity.min.js"></script>
+  <script src="/blog/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/blog/js/utils.js"></script>
+
+<script src="/blog/js/motion.js"></script>
+
+
+<script src="/blog/js/schemes/pisces.js"></script>
+
+
+<script src="/blog/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://alextsui.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://cuihongzhi1991.github.io/2020/05/01/sg01/";
+    this.page.identifier = "2020/05/01/sg01/";
+    this.page.title = "球面高斯函数01——光照贴图简史";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://alextsui.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+
+</body>
+</html>

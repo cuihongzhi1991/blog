@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
 <meta name="theme-color" content="#222">
 <meta name="generator" content="Hexo 4.2.0">
@@ -80,12 +80,12 @@
   .use-motion .logo-line-before i { left: initial; }
   .use-motion .logo-line-after i { right: initial; }
   </style>
-</noscript>
+</noscript><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
-  <div class="container use-motion">
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div class="container use-motion">
     <div class="headband"></div>
 
     <header class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -125,17 +125,17 @@
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/blog/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">4</span></a>
+    <a href="/blog/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">5</span></a>
 
   </li>
         <li class="menu-item menu-item-categories">
 
-    <a href="/blog/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">1</span></a>
+    <a href="/blog/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">2</span></a>
 
   </li>
         <li class="menu-item menu-item-tags">
 
-    <a href="/blog/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">4</span></a>
+    <a href="/blog/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">7</span></a>
 
   </li>
   </ul>
@@ -225,25 +225,20 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>UE4材质编辑器中的Custom节点可以写hlsl代码，方便进行一些复杂计算，比如for循环。可以保证材质面板简洁可读性高。UE4之前的版本直接在Custom节点中用#include包含Shaders文件夹下的ush或usf文件，这样可以用外部的代码编辑器编写shader文件。但是最近的版本有所改动，Custom节点无法识别Shaders路径下的文件。所以需要修改工程模块来包含任意路径。</p>
-<a id="more"></a>
-
+        <p>UE4材质编辑器中的Custom节点可以写hlsl代码，方便进行一些复杂计算，比如for循环。可以保证材质面板简洁可读性高。UE4之前的版本直接在Custom节点中用#include包含Shaders文件夹下的ush或usf文件，这样可以用外部的代码编辑器编写shader文件。但是最近的版本有所改动，Custom节点无法识别Shaders路径下的文件。所以需要修改工程模块来包含任意路径。<br><a id="more"></a></p>
 <h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><ul>
 <li>首先创建C++工程，如果是蓝图工程可以添加新的C++类，会自动转成C++工程。假设项目名称为MotionBlur。</li>
 <li>修改MotionBlur.Build.cs:</li>
 </ul>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">using</span> UnrealBuildTool;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MotionBlur</span> :</span> ModuleRules</span><br><span class="line">&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">MotionBlur</span><span class="params">(ReadOnlyTargetRules Target)</span> : <span class="title">base</span><span class="params">(Target)</span></span></span><br><span class="line"><span class="function">	</span>&#123;</span><br><span class="line">        PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;     </span><br><span class="line">        PublicDependencyModuleNames.AddRange(<span class="keyword">new</span> <span class="built_in">string</span>[] </span><br><span class="line">        &#123; <span class="string">"Core"</span>, <span class="string">"CoreUObject"</span>, <span class="string">"Engine"</span>, <span class="string">"InputCore"</span>,</span><br><span class="line">          <span class="comment">// 添加依赖模块，旧版是ShaderCore,现在改为RenderCore</span></span><br><span class="line">          <span class="string">"RHI"</span>, <span class="string">"RenderCore"</span></span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 添加依赖项Projects，可以识别工程路径</span></span><br><span class="line">		PrivateDependencyModuleNames.AddRange(<span class="keyword">new</span> <span class="built_in">string</span>[] &#123;<span class="string">"Projects"</span>&#125;);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
 <ul>
 <li>修改MotionBlur.h:</li>
 </ul>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> once</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"CoreMinimal.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">FMotionBlurModule</span> :</span> <span class="keyword">public</span> IModuleInterface</span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">StartupModule</span><span class="params">()</span> <span class="keyword">override</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">ShutdownModule</span><span class="params">()</span> <span class="keyword">override</span></span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
 <ul>
 <li>修改MotionBlur.cpp:</li>
 </ul>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"MotionBlur.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"Modules/ModuleManager.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"Misc/Paths.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ShaderCore.h"</span></span></span><br><span class="line"></span><br><span class="line">IMPLEMENT_MODULE(FMotionBlurModule, MotionBlur);</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">FMotionBlurModule::StartupModule</span><span class="params">()</span> </span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 获取工程路径，并指定usf文件存放的路径为工程的Shaders文件夹</span></span><br><span class="line">	FString ShaderDirectory = FPaths::Combine(FPaths::ProjectDir(), TEXT(<span class="string">"Shaders"</span>));</span><br><span class="line">    <span class="comment">// 路径映射Csutom节点直接写#include"/Project/xxx.usf"即可</span></span><br><span class="line">	AddShaderSourceDirectoryMapping(<span class="string">"/Project"</span>, ShaderDirectory);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">FMotionBlurModule::ShutdownModule</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	ResetAllShaderSourceDirectoryMappings();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
 <h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><ul>
 <li><p>函数可以放在统一的Custom节点，只有主要执行节点才可以识别输入的参数<br><img src="/blog/2020/04/16/usf424/customnode.png" alt="customnode"> <img src="/blog/2020/04/16/usf424/path.png" alt="path"></p>
 </li>
@@ -375,20 +370,20 @@
       <div class="site-state-item site-state-posts">
           <a href="/blog/archives/">
         
-          <span class="site-state-item-count">4</span>
+          <span class="site-state-item-count">5</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/blog/categories/">
           
-        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-count">2</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/blog/tags/">
           
-        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-count">7</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -418,7 +413,7 @@
           <h3 class="widget-title">Tag Cloud</h3>
           <div id="myCanvasContainer" class="widget tagcloud">
             <canvas width="250" height="250" id="resCanvas" style="width:100%">
-              <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/UE4/" rel="tag">UE4</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%8D%A1%E9%80%9A%E7%9D%80%E8%89%B2/" rel="tag">卡通着色</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%9D%90%E8%B4%A8/" rel="tag">材质</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%B8%B2%E6%9F%93%E7%AE%A1%E7%BA%BF/" rel="tag">渲染管线</a><span class="tag-list-count">3</span></li></ul>
+              <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/UE4/" rel="tag">UE4</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%85%89%E7%85%A7%E8%B4%B4%E5%9B%BE/" rel="tag">光照贴图</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%8D%A1%E9%80%9A%E7%9D%80%E8%89%B2/" rel="tag">卡通着色</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" rel="tag">图形学</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%9D%90%E8%B4%A8/" rel="tag">材质</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%B8%B2%E6%9F%93%E7%AE%A1%E7%BA%BF/" rel="tag">渲染管线</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E7%90%83%E9%9D%A2%E9%AB%98%E6%96%AF/" rel="tag">球面高斯</a><span class="tag-list-count">1</span></li></ul>
             </canvas>
           </div>
         </div>
@@ -499,6 +494,8 @@
 
   
 
+  
+
 <script>
   function loadCount() {
     var d = document, s = d.createElement('script');
@@ -528,7 +525,7 @@
       (d.head || d.body).appendChild(s);
     }
   });
-</script>
+</script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 
 </body>
 </html>
