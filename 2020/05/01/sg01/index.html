@@ -40,7 +40,7 @@
 <meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/09.png">
 <meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/10.png">
 <meta property="article:published_time" content="2020-05-01T06:14:25.000Z">
-<meta property="article:modified_time" content="2020-05-01T16:51:22.732Z">
+<meta property="article:modified_time" content="2020-05-01T22:46:49.321Z">
 <meta property="article:author" content="Alex Tsui">
 <meta property="article:tag" content="球面高斯">
 <meta property="article:tag" content="光照贴图">
@@ -242,7 +242,7 @@
 <p>开始前，可以看一下下文用到的术语符号：<br><div class="note danger no-icon">
             <ul><li>$L_o$ -指向观察方向的出射光辐射率(radiance)</li><li>$L_i$ -表面入射点的入射光辐射率</li><li>o -观察方向(着色器光照计算中一般用V表示)</li><li>i  -光线入射方向(着色器光照计算中一般用L表示)</li><li>n -表面法向量</li><li>x -表面上某点的3D坐标</li><li>$\int_{\Omega}$ -半球积分</li><li>$\theta_i$ - 表面法线与入射光的夹角角度</li><li>$\theta_o$ - 表面法线与出射光的夹角角度</li><li>$f\left(\right)$ -BRDF</li></ul>
           </div></p>
-<h2 id="早期方式——存储辐射度-irradiance"><a href="#早期方式——存储辐射度-irradiance" class="headerlink" title="早期方式——存储辐射度(irradiance)"></a>早期方式——存储辐射度(irradiance)</h2><p>自从有了带颜色的3D游戏开始就有了预先计算光照贴图的方法，一直延续到现在(2020年)。原理比较简单：为每个纹素预先计算光照数值，然后在游戏运行时对光照数值进行采样来计算表面的最终效果。虽然原理简单，但细节就比较讲究了。比如将“光照”存储在纹理中到底意味着什么？或者计算的到底是什么值？在最早期，从光照贴图中获取的数值只是简单的与材质的漫反射颜色相乘，然后直接输出颜色到屏幕上。暂且不考虑伽马矫正和sRGB转换等等。根据上面简单的描述，可以使用渲染公式来描述这种古老的方法。</p>
+<h2 id="早期的方式"><a href="#早期的方式" class="headerlink" title="早期的方式"></a>早期的方式</h2><p>自从有了带颜色的3D游戏开始就有了预先计算光照贴图的方法，一直延续到现在(2020年)。原理比较简单：为每个纹素预先计算光照数值，然后在游戏运行时对光照数值进行采样来计算表面的最终效果。虽然原理简单，但细节就比较讲究了。比如将“光照”存储在纹理中到底意味着什么？或者计算的到底是什么值？在最早期，从光照贴图中获取的数值只是简单的与材质的漫反射颜色相乘，然后直接输出颜色到屏幕上。暂且不考虑伽马矫正和sRGB转换等等。根据上面简单的描述，可以使用渲染公式来描述这种古老的方法。</p>
 <p>因为光照贴图每个纹素存储的都是单一的固定颜色值，所以可以不用考虑观察方向。仅使用简单的兰伯特漫反射BRDF即可。一般我们用以下的公式计算从一个入射点计算出射辐射率：</p>
 <script type="math/tex; mode=display">\begin{align}
 L_o(o,x) = \int_{\Omega}{}f(i,o,x)\cdot L_i(i,x)\cdot\cos(\theta_i)\cdot{d}\Omega \nonumber  
@@ -376,7 +376,7 @@ L_o(o,x) = \int_{\Omega}{} \frac{C_{diffuse}}{\pi}\cdot L_i(i,x)\cdot\cos(\theta
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#早期方式——存储辐射度-irradiance"><span class="nav-number">1.</span> <span class="nav-text">早期方式——存储辐射度(irradiance)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#法线贴图"><span class="nav-number">2.</span> <span class="nav-text">法线贴图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#镜面反射"><span class="nav-number">3.</span> <span class="nav-text">镜面反射</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#球谐函数"><span class="nav-number">4.</span> <span class="nav-text">球谐函数</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#早期的方式"><span class="nav-number">1.</span> <span class="nav-text">早期的方式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#法线贴图"><span class="nav-number">2.</span> <span class="nav-text">法线贴图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#镜面反射"><span class="nav-number">3.</span> <span class="nav-text">镜面反射</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#球谐函数"><span class="nav-number">4.</span> <span class="nav-text">球谐函数</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
