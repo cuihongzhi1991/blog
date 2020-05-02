@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/blog/images/apple-touch-icon-alex.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/blog/images/favicon-32x32-alex.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/blog/images/favicon-16x16-alex.png">
+  <link rel="mask-icon" href="/blog/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="MtLzwmTs3a2ZnDBFhocKgVUp2SOlNOwwXgBdgGt482I">
+
+<link rel="stylesheet" href="/blog/css/main.css">
+
+
+<link rel="stylesheet" href="/blog/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"cuihongzhi1991.github.io","root":"/blog/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"disqus","storage":true,"lazyload":false,"nav":null,"activeClass":"disqus"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="本篇是球面高斯函数与预计算光照系列的第二部分，会介绍球面高斯的基础知识——球形径向基函数(spherical radial basis function, SRBF)。本文会介绍一些核心概念，后续的几篇文章会使用这些概念来计算光照贴图或探针中存储的入射光辐射率近似值。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="球面高斯函数02——球面高斯函数101">
+<meta property="og:url" content="https://cuihongzhi1991.github.io/2020/05/02/sg02/index.html">
+<meta property="og:site_name" content="Alex Technical Art">
+<meta property="og:description" content="本篇是球面高斯函数与预计算光照系列的第二部分，会介绍球面高斯的基础知识——球形径向基函数(spherical radial basis function, SRBF)。本文会介绍一些核心概念，后续的几篇文章会使用这些概念来计算光照贴图或探针中存储的入射光辐射率近似值。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/02/sg02/01.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/02/sg02/02.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/02/sg02/03.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/02/sg02/04.png">
+<meta property="article:published_time" content="2020-05-02T06:14:25.000Z">
+<meta property="article:modified_time" content="2020-05-02T05:18:28.111Z">
+<meta property="article:author" content="Alex Tsui">
+<meta property="article:tag" content="球面高斯">
+<meta property="article:tag" content="图形学">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cuihongzhi1991.github.io/blog/2020/05/02/sg02/01.png">
+
+<link rel="canonical" href="https://cuihongzhi1991.github.io/2020/05/02/sg02/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>球面高斯函数02——球面高斯函数101 | Alex Technical Art</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/blog/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Alex Technical Art</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/blog/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/blog/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">6</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/blog/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">2</span></a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/blog/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">7</span></a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2N1aWhvbmd6aGkxOTkx" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cuihongzhi1991.github.io/2020/05/02/sg02/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/blog/images/avatar.png">
+      <meta itemprop="name" content="Alex Tsui">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Alex Technical Art">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          球面高斯函数02——球面高斯函数101
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-05-02 14:14:25" itemprop="dateCreated datePublished" datetime="2020-05-02T14:14:25+08:00">2020-05-02</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/blog/categories/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" itemprop="url" rel="index"><span itemprop="name">图形学</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/blog/2020/05/02/sg02/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/05/02/sg02/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>本篇是球面高斯函数与预计算光照系列的第二部分，会介绍球面高斯的基础知识——球形径向基函数(spherical radial basis function, SRBF)。本文会介绍一些核心概念，后续的几篇文章会使用这些概念来计算光照贴图或探针中存储的入射光辐射率近似值。<br><a id="more"></a></p>
+<p>本系列的其他文章可以点击下方链接跳转。<br><div class="note primary no-icon">
+            <ul><li><a href="/blog/2020/05/01/sg01/" title="Part1-光照贴图简史">Part1-光照贴图简史</a></li><li><a href="/blog/2020/05/02/sg02/" title="Part2-球面高斯函数101">Part2-球面高斯函数101</a></li><li>Part3-从球面高斯光源重建漫反射光照</li><li>Part4-从球面高斯光源重建镜面反射光照</li><li>Part5-用球面高斯函数近似辐射率和辐射度</li></ul>
+          </div></p>
+<h2 id="何为球面高斯函数？"><a href="#何为球面高斯函数？" class="headerlink" title="何为球面高斯函数？"></a>何为球面高斯函数？</h2><p>球面高斯函数，本质上是定义在球体表面的高斯分布函数。1D的高斯函数就是以e为底的指数函数，下图是以x=0为中心，高度为3的1D高斯函数。<br><img src="/blog/2020/05/02/sg02/01.png" alt></p>
+<p>在做图像模糊处理时，也曾听说或使用过高斯模糊，其本质就是使用2D的高斯函数作为滤波器。下图是高斯滤波器应用在2D图像上的白点时的效果。<br><img src="/blog/2020/05/02/sg02/02.png" alt></p>
+<p>分布在球面上的高斯函数也是同样的原理，只是维度有了提升，下面是球面高斯示意图。<br><img src="/blog/2020/05/02/sg02/03.png" alt></p>
+<p>1D的高斯函数是以下的形式：</p>
+<script type="math/tex; mode=display">\begin{align}
+ae^{\frac{-(x-b)^{2}}{2c^{2}}} \nonumber  
+\end{align}</script><p>(x-b)项使1D高斯函数在笛卡尔坐标系中可以求出给定点到高斯中心的距离。而3D的球面高斯函数参数与1D和2D的不同，需要改变(x-b)项，让高斯函数根据两个单位方向向量夹角进行计算使其作用在球面上。用点积的方式就可以实现：</p>
+<script type="math/tex; mode=display">\begin{align}
+G(v;\mu,\lambda,a) = ae^{\lambda(\mu\cdot{v}-1)}\nonumber  
+\end{align}</script><p>和普通高斯函数一样，有一些函数可以控制波瓣的形状和位置。参数$\mu$是波瓣的轴向或方向，控制波瓣在球面的位置并且指向波瓣的中心；参数$\lambda$是波瓣的锐度(sharpness)，增加该值时，波瓣会变得更纤细，也就意味着越是远离波瓣轴衰减的越快；参数a是波瓣的振幅或者强度，是波瓣波峰顶部的高度值，可以是标量值，在图形学中也可以是向量，来控制RGB不同颜色通道的变化。在HLSL代码中，只需要球面上一点的标准化方向向量就可以求出该点的球面高斯值。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">SG</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">  float3 Amplitude;</span><br><span class="line">  float3 Axis;</span><br><span class="line">  <span class="keyword">float</span> Sharpness;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">float3 <span class="title">EvaluateSG</span><span class="params">(in SG sg, in float3 dir)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">float</span> cosAngle = dot(dir, sg.Axis);</span><br><span class="line">  <span class="keyword">return</span> sg.Amplitude * <span class="built_in">exp</span>(sg.Sharpness * (cosAngle - <span class="number">1.0f</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="为何使用球面高斯函数？"><a href="#为何使用球面高斯函数？" class="headerlink" title="为何使用球面高斯函数？"></a>为何使用球面高斯函数？</h2><p>球面高斯函数非常直观易于理解，而且很多论文已经探索了球面高斯的使用价值，并对漫反射和镜面反射材质使用球面高斯函数实现了预计算的辐射率传递(pre-computed radiance transfer, PRT)。尤其是《All-Frequency Rendering of Dynamic, Spatially-Varing Reflectance》一文成为RAD工作室使用球面高斯函数的主要参考和灵感。</p>
+<h2 id="积运算"><a href="#积运算" class="headerlink" title="积运算"></a>积运算</h2><p>对两个高斯函数做积运算可以得到另外一个高斯函数，球面高斯函数也是如此。球面上每个点对两个球面高斯函数进行积运算都会产生另外一个球面高斯函数。实质上就是向量的积运算：</p>
+<script type="math/tex; mode=display">\begin{align}
+G_1(v)G_2(v) = G(v;\frac{\mu_m}{||\mu_m||},a_1a_2e^{\lambda_m(||\mu_m||-1)}) \nonumber
+\end{align}</script><script type="math/tex; mode=display">\begin{align}
+\lambda_m = \lambda_1+\lambda_2 \nonumber
+\end{align}</script><script type="math/tex; mode=display">\begin{align}
+\mu_m = \frac{\lambda_1\mu_1+\lambda_2\mu_2}{\lambda_1+\lambda_2} \nonumber
+\end{align}</script><p>HLSL代码如下：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">SG <span class="title">SGProduct</span><span class="params">(in SG x, in SG y)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    float3 um = (x.Sharpness * x.Axis + y.Sharpness * y.Axis) /</span><br><span class="line">                (x.Sharpness + y.Sharpness);</span><br><span class="line">    <span class="keyword">float</span> umLength = length(um);</span><br><span class="line">    <span class="keyword">float</span> lm = x.Sharpness + y.Sharpness;</span><br><span class="line"> </span><br><span class="line">    SG res;</span><br><span class="line">    res.Axis = um * (<span class="number">1.0f</span> / umLength);</span><br><span class="line">    res.Sharpness = lm * umLength;</span><br><span class="line">    res.Amplitude = x.Amplitude * y.Amplitude *</span><br><span class="line">                    <span class="built_in">exp</span>(lm * (umLength - <span class="number">1.0f</span>));</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="积分"><a href="#积分" class="headerlink" title="积分"></a>积分</h2><p>高斯函数还有一个很好的属性——积分具有一个闭式解，也作误差函数。当然球面高斯也是如此，可以对整个球面做球面高斯积分：</p>
+<script type="math/tex; mode=display">\begin{align}
+\int_{\Omega}G(v)dv = 2\pi\frac{a}{\lambda}(1-e^{-2\lambda}) \nonumber
+\end{align}</script><p>计算积分可以得到球面高斯的总“能量”，对光照的计算很有用。对球面高斯的归一化处理也十分有用(生成一个积分为1的球面高斯)。归一化的球面高斯可以用来表示概率分布，比如法线分布函数(Normal Distribution Function, NDF)。实际上，归一化的球面高斯函数等效于3D中的冯·米塞斯-费舍尔分布(von Mises-Fisher distribution)。</p>
+<p>如果移除指数项的，计算球面高斯积分开销会很低。随着球面高斯的锐度增加，$(1-e^{-2\lambda})$项的值会很快逼近1，所以只要锐度足够高，就可以在很小的误差范围内将该项移除掉。下图是锐度(X轴)增加时$(1-e^{-2\lambda})$项(Y轴)的数值变化：<br><img src="/blog/2020/05/02/sg02/04.png" alt></p>
+<p>在HLSL实现球面高斯积分的准确版本和近似版本：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">float3 <span class="title">SGIntegral</span><span class="params">(in SG sg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">float</span> expTerm = <span class="number">1.0f</span> - <span class="built_in">exp</span>(<span class="number">-2.0f</span> * sg.Sharpness);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">2</span> * Pi * (sg.Amplitude / sg.Sharpness) * expTerm;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function">float3 <span class="title">ApproximateSGIntegral</span><span class="params">(in SG sg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">2</span> * Pi * (sg.Amplitude / sg.Sharpness);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="点积"><a href="#点积" class="headerlink" title="点积"></a>点积</h2><p>如果要使用球面高斯积分公式计算两个球面高斯乘积的积分，就是计算两者的点积，通常定义如下：</p>
+<script type="math/tex; mode=display">\begin{align}
+\int_{\Omega}G_1(v)G_2(v)dv = \frac{4\pi{a_0}{a_1}}{e^{\lambda{m}}}\frac{sinh(||\mu_m||)}{||\mu_m||} \nonumber
+\end{align}</script><p>为了避免数值上的误差可以用下面的形式：</p>
+<script type="math/tex; mode=display">\begin{align}
+\int_{\Omega}G_1(v)G_2(v)dv = 2\pi{a_0}{a_1}\frac{e^{||\mu_m||-\lambda_m}-e^{-||\mu_m||-\lambda_m}}{||\mu_m||} \nonumber
+\end{align}</script><p>HLSL中的实现如下：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">float3 <span class="title">SGInnerProduct</span><span class="params">(in SG x, in SG y)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">float</span> umLength = length(x.Sharpness * x.Axis +</span><br><span class="line">                            y.Sharpness * y.Axis);</span><br><span class="line">    float3 expo = <span class="built_in">exp</span>(umLength - x.Sharpness - y.Sharpness) *</span><br><span class="line">                  x.Amplitude * y.Amplitude;</span><br><span class="line">    <span class="keyword">float</span> other = <span class="number">1.0f</span> - <span class="built_in">exp</span>(<span class="number">-2.0f</span> * umLength);</span><br><span class="line">    <span class="keyword">return</span> (<span class="number">2.0f</span> * Pi * expo * other) / umLength;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="阈值"><a href="#阈值" class="headerlink" title="阈值"></a>阈值</h2><p>球面高斯函数支持”紧凑$\epsilon$”，也就是阈值。可以定一个角度，以球面高斯轴的$\theta$弧度内的点的值都大于$\epsilon$。如果将其翻转，就可以计算出锐度$\lambda$，给定弧度$\theta$和$\epsilon$，反求锐度的公式如下：</p>
+<script type="math/tex; mode=display">\begin{align}
+ae^{\lambda(cos\theta-1)} = \epsilon \nonumber
+\end{align}</script><script type="math/tex; mode=display">\begin{align}
+\lambda = \frac{ln(\epsilon)-ln(a)}{cos\theta-1} \nonumber
+\end{align}</script><p>HLSL实现如下：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">float</span> <span class="title">SGSharpnessFromThreshold</span><span class="params">(in <span class="keyword">float</span> amplitude, in <span class="keyword">float</span> epsilon, in <span class="keyword">float</span> cosTheta)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> (<span class="built_in">log</span>(epsilon) - <span class="built_in">log</span>(amplitude)) / (cosTheta - <span class="number">1.0f</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="旋转"><a href="#旋转" class="headerlink" title="旋转"></a>旋转</h2><p>最后一个要讨论的是旋转操作。旋转球面高斯函数很简单：只需要把旋转变换应用到球面高斯的轴向量上。旋转变换可以用矩阵、四元数或者其他方式实现。L1以上的球面高斯需要更复杂的变换。</p>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>总要恰饭的嘛</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/blog/images/wechatpay.png" alt="Alex Tsui 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/blog/images/alipay.jpg" alt="Alex Tsui 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/blog/tags/%E7%90%83%E9%9D%A2%E9%AB%98%E6%96%AF/" rel="tag"><i class="fa fa-tag"></i> 球面高斯</a>
+              <a href="/blog/tags/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" rel="tag"><i class="fa fa-tag"></i> 图形学</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/blog/2020/05/01/sg01/" rel="prev" title="球面高斯函数01——光照贴图简史">
+      <i class="fa fa-chevron-left"></i> 球面高斯函数01——光照贴图简史
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#何为球面高斯函数？"><span class="nav-number">1.</span> <span class="nav-text">何为球面高斯函数？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#为何使用球面高斯函数？"><span class="nav-number">2.</span> <span class="nav-text">为何使用球面高斯函数？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#积运算"><span class="nav-number">3.</span> <span class="nav-text">积运算</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#积分"><span class="nav-number">4.</span> <span class="nav-text">积分</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#点积"><span class="nav-number">5.</span> <span class="nav-text">点积</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#阈值"><span class="nav-number">6.</span> <span class="nav-text">阈值</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#旋转"><span class="nav-number">7.</span> <span class="nav-text">旋转</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Alex Tsui"
+      src="/blog/images/avatar.png">
+  <p class="site-author-name" itemprop="name">Alex Tsui</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/blog/archives/">
+        
+          <span class="site-state-item-count">6</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/blog/categories/">
+          
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/blog/tags/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2N1aWhvbmd6aGkxOTkx" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;cuihongzhi1991"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS9BbGV4VHN1aUNO" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;AlexTsuiCN"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+      <!--tag cloud-->
+      
+      <script type="text/javascript" charset="utf-8" src="/blog/js/tagcloud.js"></script>
+      <script type="text/javascript" charset="utf-8" src="/blog/js/tagcanvas.js"></script>
+        <div class="widget-wrap">
+          <h3 class="widget-title">Tag Cloud</h3>
+          <div id="myCanvasContainer" class="widget tagcloud">
+            <canvas width="250" height="250" id="resCanvas" style="width:100%">
+              <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/UE4/" rel="tag">UE4</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%85%89%E7%85%A7%E8%B4%B4%E5%9B%BE/" rel="tag">光照贴图</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%8D%A1%E9%80%9A%E7%9D%80%E8%89%B2/" rel="tag">卡通着色</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" rel="tag">图形学</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%9D%90%E8%B4%A8/" rel="tag">材质</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%B8%B2%E6%9F%93%E7%AE%A1%E7%BA%BF/" rel="tag">渲染管线</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E7%90%83%E9%9D%A2%E9%AB%98%E6%96%AF/" rel="tag">球面高斯</a><span class="tag-list-count">2</span></li></ul>
+            </canvas>
+          </div>
+        </div>
+      
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Alex Tsui</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/blog/lib/anime.min.js"></script>
+  <script src="/blog/lib/velocity/velocity.min.js"></script>
+  <script src="/blog/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/blog/js/utils.js"></script>
+
+<script src="/blog/js/motion.js"></script>
+
+
+<script src="/blog/js/schemes/pisces.js"></script>
+
+
+<script src="/blog/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://alextsui.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://cuihongzhi1991.github.io/2020/05/02/sg02/";
+    this.page.identifier = "2020/05/02/sg02/";
+    this.page.title = "球面高斯函数02——球面高斯函数101";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://alextsui.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+
+</body>
+</html>
