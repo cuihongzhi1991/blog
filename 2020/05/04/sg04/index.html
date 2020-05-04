@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/blog/images/apple-touch-icon-alex.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/blog/images/favicon-32x32-alex.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/blog/images/favicon-16x16-alex.png">
+  <link rel="mask-icon" href="/blog/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="MtLzwmTs3a2ZnDBFhocKgVUp2SOlNOwwXgBdgGt482I">
+
+<link rel="stylesheet" href="/blog/css/main.css">
+
+
+<link rel="stylesheet" href="/blog/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"cuihongzhi1991.github.io","root":"/blog/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"disqus","storage":true,"lazyload":false,"nav":null,"activeClass":"disqus"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="上篇文章中，讨论了使用漫反射BRDF时如何计算球面高斯光源的分布。下面可以讨论如何计算与视角有关的更复杂的BRDF，这样就可以得到高光的分布。本文会介绍如何逼近基于微表面的镜面反射BRDF对球面高斯光源的反应情况，并且会介绍各向异性球面高斯的概念。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="球面高斯函数04——球面高斯光源的镜面高光">
+<meta property="og:url" content="https://cuihongzhi1991.github.io/2020/05/04/sg04/index.html">
+<meta property="og:site_name" content="Alex Technical Art">
+<meta property="og:description" content="上篇文章中，讨论了使用漫反射BRDF时如何计算球面高斯光源的分布。下面可以讨论如何计算与视角有关的更复杂的BRDF，这样就可以得到高光的分布。本文会介绍如何逼近基于微表面的镜面反射BRDF对球面高斯光源的反应情况，并且会介绍各向异性球面高斯的概念。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/04/sg04/01.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/04/sg04/02.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/04/sg04/03.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/04/sg04/04.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/04/sg04/05.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/04/sg04/06.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/04/sg04/07.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/04/sg04/08.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/04/sg04/09.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/04/sg04/10.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/04/sg04/11.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/04/sg04/12.png">
+<meta property="article:published_time" content="2020-05-04T06:14:25.000Z">
+<meta property="article:modified_time" content="2020-05-04T14:52:58.692Z">
+<meta property="article:author" content="Alex Tsui">
+<meta property="article:tag" content="球面高斯">
+<meta property="article:tag" content="图形学">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cuihongzhi1991.github.io/blog/2020/05/04/sg04/01.png">
+
+<link rel="canonical" href="https://cuihongzhi1991.github.io/2020/05/04/sg04/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>球面高斯函数04——球面高斯光源的镜面高光 | Alex Technical Art</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/blog/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Alex Technical Art</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/blog/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/blog/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">8</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/blog/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">2</span></a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/blog/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">7</span></a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2N1aWhvbmd6aGkxOTkx" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cuihongzhi1991.github.io/2020/05/04/sg04/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/blog/images/avatar.png">
+      <meta itemprop="name" content="Alex Tsui">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Alex Technical Art">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          球面高斯函数04——球面高斯光源的镜面高光
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-05-04 14:14:25" itemprop="dateCreated datePublished" datetime="2020-05-04T14:14:25+08:00">2020-05-04</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/blog/categories/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" itemprop="url" rel="index"><span itemprop="name">图形学</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/blog/2020/05/04/sg04/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/05/04/sg04/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>上篇文章中，讨论了使用漫反射BRDF时如何计算球面高斯光源的分布。下面可以讨论如何计算与视角有关的更复杂的BRDF，这样就可以得到高光的分布。本文会介绍如何逼近基于微表面的镜面反射BRDF对球面高斯光源的反应情况，并且会介绍各向异性球面高斯的概念。<br><a id="more"></a></p>
+<p>本系列的其他文章可以点击下方链接跳转。<br><div class="note primary no-icon">
+            <ul><li><a href="/blog/2020/05/01/sg01/" title="Part1-光照贴图简史">Part1-光照贴图简史</a></li><li><a href="/blog/2020/05/02/sg02/" title="Part2-球面高斯函数101">Part2-球面高斯函数101</a></li><li><a href="/blog/2020/05/03/sg03/" title="Part3-球面高斯光源的漫射照明">Part3-球面高斯光源的漫射照明</a></li><li><a href="/blog/2020/05/04/sg04/" title="Part4-球面高斯光源的镜面高光">Part4-球面高斯光源的镜面高光</a></li><li>Part5-用球面高斯函数近似辐射率和辐射度</li></ul>
+          </div></p>
+<h2 id="微平面镜面反射"><a href="#微平面镜面反射" class="headerlink" title="微平面镜面反射"></a>微平面镜面反射</h2><p>迪士尼提出的基于物理的渲染公式是当下实时渲染领域比较流行，应用最广的。其中基于微平面的镜面反射BRDF如下：</p>
+<script type="math/tex; mode=display">\begin{align}
+f(i,o)=\frac{F(o,h)G(i,o,h)D(h)}{4(n\cdot{i})(n\cdot{o})} \nonumber
+\end{align}</script><p>D项通常称为法线分布函数(Normal Distribution Function, NDF)，描述微面元法线分布的概率，即正确朝向的法线的浓度。可以在粗糙度上做参数化，描述微平面的凹凸程度。低粗糙度会产生锐利清晰的镜面反射和狭窄细长的镜面波瓣；高粗糙度会产生更宽的镜面波瓣。大多数的现代游戏(包括教团:1886)的D项都用的GGX(Trowbridge-Reitz)分布。下面两图都使用的GGX分布，分别使用0.5的粗糙度和0.1的粗糙度；X轴是表面法线和半角向量的夹角。<br><img src="/blog/2020/05/04/sg04/01.png" alt><img src="/blog/2020/05/04/sg04/02.png" alt></p>
+<p>G项是几何函数(Geometry Function)，也被称为掩蔽阴影函数(Masking-Shadow Function)。描述微平面自成阴影的属性，即微面元法线与面法线一致并未被遮蔽的表面点的百分比。下图使用的是Smith-GGX函数作为G项的曲线，粗糙度为0.25，法线与视线夹角为0。<br><img src="/blog/2020/05/04/sg04/03.png" alt></p>
+<p>F项是菲涅尔方程(Fresnel Equation)，描述不同的表面角下表面所反射的光线所占的比率。从F0到F90，反射强度逐渐增加。使用Schilick近似表示菲涅尔项的曲线如下，F0=0.04：<br><img src="/blog/2020/05/04/sg04/04.png" alt></p>
+<h2 id="球面高斯光源的镜面反射"><a href="#球面高斯光源的镜面反射" class="headerlink" title="球面高斯光源的镜面反射"></a>球面高斯光源的镜面反射</h2><p>沿用迪士尼的镜面反射BRDF，为了与精确光源以及IBL探针正常交互。但会按照球面高斯光源对其拓展：</p>
+<script type="math/tex; mode=display">\begin{align}
+L_o(0,x) = \int_{\Omega}\frac{F(o,h)G(i,o,h)D(h)G_l(i;\mu,\lambda,a)cos(\theta_i)d\Omega}{4cos(\theta_i)cos(\theta_o)} \nonumber
+\end{align}</script><script type="math/tex; mode=display">\begin{align}
+L_o(0,x) = \int_{\Omega}\frac{F(o,h)G(i,o,h)D(h)ae^{\lambda(\mu\cdot{i}-1)}d\Omega}{4cos(\theta_o)} \nonumber
+\end{align}</script><p>与漫反射不同，现在积分中有多个项与视角有关。那么需要做一些激进的优化得到期望的结果。</p>
+<h3 id="D项"><a href="#D项" class="headerlink" title="D项"></a>D项</h3><p>D项是镜面反射BRDF中最重要的项。该分布决定了镜面高光整体的形状和强度，如果回看GGX曲线，其走势类似于高斯曲线，但不完全匹配。用单个球面高斯是不能实现紧凑高光和长拖尾的的特征。可以把多个高斯相加去逼近，但本文会用简单的单波瓣去近似。《All-Frequency Rendering of Dynamic, Spatially-Varying Reflectance》中提出过一种逼近Cook-Torrance D项的一个简单公式：</p>
+<script type="math/tex; mode=display">\begin{align}
+D(h) = e^{-(arccos(h\cdot n)/m)^{2}} \approx G(h;n,\frac{2}{m^2},l) \nonumber
+\end{align}</script><p>但该高斯模型的峰值并不会随着粗糙度变化而变化，好在有简单的分析公式可以计算球面高斯的积分，因此可以将整个积分的幅度值设置为1，这样一个归一化的D项就是：</p>
+<script type="math/tex; mode=display">\begin{align}
+D_{SG}(h) = G(h;n,\frac{2}{m^2},\frac{1}{\pi m^2}) \nonumber
+\end{align}</script><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">SG <span class="title">DistributionTermSG</span><span class="params">(in float3 direction, in <span class="keyword">float</span> roughness)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    SG distribution;</span><br><span class="line">    distribution.Axis = direction;</span><br><span class="line">    <span class="keyword">float</span> m2 = roughness * roughness;</span><br><span class="line">    distribution.Sharpness = <span class="number">2</span> / m2;</span><br><span class="line">    distribution.Amplitude = <span class="number">1.0f</span> / (Pi * m2);</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> distribution;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>下方的图标显示了当前的近似方式与GGX的差距，上图粗糙度为0.25，下图粗糙度为0.5：<br><img src="/blog/2020/05/04/sg04/05.png" alt> <img src="/blog/2020/05/04/sg04/06.png" alt></p>
+<h3 id="域之间的扭曲"><a href="#域之间的扭曲" class="headerlink" title="域之间的扭曲"></a>域之间的扭曲</h3><p>现在有了球面高斯格式的法线分布函数，但却无法使用。因为我们是在半角向量中定义的分布函数，球面高斯的轴是指向面法线方向的，而且我们使用半角向量作为采样方向。如果要使用球面高斯积运算来获取球面高斯光源下的分布，必须保证分布波瓣和光源在同一个域的。换言之，分布的中心是随着观察角度变化的，因为半角向量会随着观察方向改变。</p>
+<p>为了确保分布波瓣在正确的域中，需要对其扭曲来对齐观察方向的BRDF切片。对于微平面的镜面反射BRDF来说，波瓣是围绕视线反射方向大致居中的。下方图表就是GGX的波瓣，蓝线为观察方向，绿线是面法线方向，粉线是视线反射方向。上图视角为0度，下图视角为45度。<br><img src="/blog/2020/05/04/sg04/07.png" alt></p>
+<p>《All-Frequency Rendering of Dynamic, Spatially-Varying Reflectance》中提供了一个简单的扭曲算子，可以是分布波瓣围绕视线反射方向旋转，并且根据原始波瓣中心的差异差异调整锐度。</p>
+<script type="math/tex; mode=display">\begin{align}
+\mu_w = 2(o\cdot \mu_d)\mu_d - o \nonumber
+\end{align}</script><script type="math/tex; mode=display">\begin{align}
+\lambda_w = \frac{\lambda_d}{4|\mu_d\cdot o|} \nonumber
+\end{align}</script><script type="math/tex; mode=display">\begin{align}
+a_w = a_d \nonumber
+\end{align}</script><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">SG <span class="title">WarpDistributionSG</span><span class="params">(in SG ndf, in float3 view)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    SG warp;</span><br><span class="line"> </span><br><span class="line">    warp.Axis = reflect(-view, ndf.Axis);</span><br><span class="line">    warp.Amplitude = ndf.Amplitude;</span><br><span class="line">    warp.Sharpness = ndf.Sharpness;</span><br><span class="line">    warp.Sharpness /= (<span class="number">4.0f</span> * max(dot(ndf.Axis, view), <span class="number">0.0001f</span>));</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> warp;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>现在对比一下扭曲后的球面高斯分布项与GGX分布的差异，红色是GGX分布，绿色是球面高斯分布：<br><img src="/blog/2020/05/04/sg04/08.png" alt></p>
+<p>形状稍有偏离，但扭曲后的波瓣出现在了正确的位置上。</p>
+<h3 id="剩余项的近似"><a href="#剩余项的近似" class="headerlink" title="剩余项的近似"></a>剩余项的近似</h3><p>剩余的G项和F项和高斯分布相差甚远，所以不能用球面高斯去近似。《All-Frequency Rendering of Dynamic, Spatially-Varying Reflectance》中针对此问题做了一些假设来回避此问题，即这些项的值在整个BRDF波瓣中保持不变，这样就可以把它们从积分中提出来，并仅针对BRDF波瓣的轴向进行评估。这使得BRDF在掠射角仍然有效果。但是随着粗糙度增加，G项和F项会离波瓣中心越远，BRDF波瓣会变宽，误差会变得明显。</p>
+<script type="math/tex; mode=display">\begin{align}
+f_{sg}(i,o) = \frac{F(o,h_w)G(\mu_w,o,h_w)\frac{1}{\pi m^2}e^{\lambda_w(\mu_w \cdot i -1)}}{4(n\cdot \mu_w)(n \cdot o)} \nonumber
+\end{align}</script><script type="math/tex; mode=display">\begin{align}
+h_w = \frac{o+\mu_w}{||o+\mu_w||} \nonumber
+\end{align}</script><p>最后是半球积分中与BRDF相乘的余弦项。《All-Frequency Rendering of Dynamic, Spatially-Varying Reflectance》中建议使用球面高斯乘积来得到一个球面高斯，该球面高斯表示球面高斯分布项与钳制余弦波的近似球面高斯相乘的结果。为了降低开销，采用G项与F项的方式，只会在BRDF波瓣的轴的方向评估余弦项。代码如下：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">float</span> <span class="title">GGX_V1</span><span class="params">(in <span class="keyword">float</span> m2, in <span class="keyword">float</span> nDotX)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1.0f</span> / (nDotX + <span class="built_in">sqrt</span>(m2 + (<span class="number">1</span> - m2) * nDotX * nDotX));</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function">float3 <span class="title">SpecularTermSGWarp</span><span class="params">(in SG light, in float3 normal,</span></span></span><br><span class="line"><span class="function"><span class="params">                          in <span class="keyword">float</span> roughness, in float3 view,</span></span></span><br><span class="line"><span class="function"><span class="params">                          in float3 specAlbedo)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// Create an SG that approximates the NDF.</span></span><br><span class="line">    SG ndf = DistributionTermSG(normal, roughness);</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// Warp the distribution so that our lobe is in the same</span></span><br><span class="line">    <span class="comment">// domain as the lighting lobe</span></span><br><span class="line">    SG warpedNDF = WarpDistributionSG(ndf, view);</span><br><span class="line"> </span><br><span class="line">     <span class="comment">// Convolve the NDF with the SG light</span></span><br><span class="line">    float3 output = SGInnerProduct(warpedNDF, light);</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// Parameters needed for the visibility</span></span><br><span class="line">    float3 warpDir = warpedNDF.Axis;</span><br><span class="line">    <span class="keyword">float</span> m2 = roughness * roughness;</span><br><span class="line">    <span class="keyword">float</span> nDotL = saturate(dot(normal, warpDir));</span><br><span class="line">    <span class="keyword">float</span> nDotV = saturate(dot(normal, view));</span><br><span class="line">    float3 h = normalize(warpedNDF.Axis + view);</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// Visibility term evaluated at the center of</span></span><br><span class="line">    <span class="comment">// our warped BRDF lobe</span></span><br><span class="line">    output *= GGX_V1(m2, nDotL) * GGX_V1(m2, nDotV);</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// Fresnel evaluated at the center of our warped BRDF lobe</span></span><br><span class="line">    <span class="keyword">float</span> powTerm = <span class="built_in">pow</span>((<span class="number">1.0f</span> - saturate(dot(warpDir, h))), <span class="number">5</span>);</span><br><span class="line">    output *= specAlbedo + (<span class="number">1.0f</span> - specAlbedo) * powTerm;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// Cosine term evaluated at the center of the BRDF lobe</span></span><br><span class="line">    output *= nDotL;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> max(output, <span class="number">0.0f</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>下图是使用球面高斯光源照亮的场景，并使用上文中所有的镜面反射近似方式后的结果，场景的粗糙度为0.128。<br><img src="/blog/2020/05/04/sg04/09.png" alt></p>
+<h2 id="各向异性"><a href="#各向异性" class="headerlink" title="各向异性"></a>各向异性</h2><p>上图中地板的高光又宽又圆，正常的掠射角观察的高光应该会延伸到较远的地方。所以需要重新检查一下D项。下方的3D示意图分别是观察角度较垂直和较倾斜时GGX分布项情况。不难发现角度趋近垂直时，分布情况类似球面高斯一样镜像对称。而趋近于掠射角时就像右图一样，波瓣开始伸展并且不再镜像对称。伸展的波瓣会呈现拉伸的高光。而我们目前的球面高斯分布项则不无法表示这种非对称性。</p>
+<p>好在2013年，一篇名为《Anisotropic Spherical Gaussians》的论文解释了如何扩展球面高斯函数来支持各向异性的波瓣宽度或锐度。定义如下：</p>
+<script type="math/tex; mode=display">\begin{align}
+G(v;[\mu_x, \mu_y, \mu_z], [\lambda_x, \lambda_y],a) = a\cdot S(v,\mu_z)e^{-\lambda_x(v\cdot \mu_x)-\lambda_y(v\cdot \mu_y)} \nonumber
+\end{align}</script><p>球面高斯有一个轴，而各向异性球面高斯由$\mu_x, \mu_y, \mu_z$组成了完整的正交基向量。并且各向异性球面高斯有两个锐度参数$\lambda_x, \lambda_y$，它们分别控制相对于$\mu_x$和$\mu_y$的锐度。例如设置$\lambda_x$为16，$\lambda_y$为64，那么拉伸的高斯波瓣就会在$\lambda_y$方向上更狭窄，并且中心落在$\mu_z$。下面使用这些参数将各向异性球面高斯显示在球面上：<br><img src="/blog/2020/05/04/sg04/10.png" alt></p>
+<p>HLSL实现如下：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ASG</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    float3 Amplitude;</span><br><span class="line">    float3 BasisZ;</span><br><span class="line">    float3 BasisX;</span><br><span class="line">    float3 BasisY;</span><br><span class="line">    <span class="keyword">float</span> SharpnessX;</span><br><span class="line">    <span class="keyword">float</span> SharpnessY;</span><br><span class="line">&#125;;</span><br><span class="line"> </span><br><span class="line"><span class="function">float3 <span class="title">EvaluateASG</span><span class="params">(in ASG asg, in float3 dir)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">float</span> sTerm = saturate(dot(asg.BasisZ, dir));</span><br><span class="line">    <span class="keyword">float</span> lambdaTerm = asg.SharpnessX * dot(dir, asg.BasisX)</span><br><span class="line">                                      * dot(dir, asg.BasisX);</span><br><span class="line">    <span class="keyword">float</span> muTerm = asg.SharpnessY * dot(dir, asg.BasisY)</span><br><span class="line">                                  * dot(dir, asg.BasisY);</span><br><span class="line">    <span class="keyword">return</span> asg.Amplitude * sTerm* <span class="built_in">exp</span>(-lambdaTerm - muTerm);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这篇各向异性球面高斯的论文还提供了两个公式，可用于提高球面高斯光源的镜面反射质量。第一个是新的扭曲算子，可以用NDF作为各向同性球面高斯，然后沿着视线方向拉伸产生比实际BRDF更好的各向异性球面高斯。另一个有用的公式是将各向异性球面高斯与各向同性球面高斯做卷积。可以用来将各向异性扭曲的NDF波瓣与球面高斯光源波瓣做卷积。下图左是球面扭曲，图中是各向异性扭曲，图右是实际的GGX分布。<br><img src="/blog/2020/05/04/sg04/11.png" alt></p>
+<p>各向异性的分布看起来更接近实际的GGX NDF分布，因为有了之前缺少的垂直拉伸。下面是HLSL中的实现：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">float3 <span class="title">ConvolveASG_SG</span><span class="params">(in ASG asg, in SG sg)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// The ASG paper specifes an isotropic SG as</span></span><br><span class="line">    <span class="comment">// exp(2 * nu * (dot(v, axis) - 1)),</span></span><br><span class="line">    <span class="comment">// so we must divide our SG sharpness by 2 in order</span></span><br><span class="line">    <span class="comment">// to get the nup parameter expected by the ASG formula</span></span><br><span class="line">    <span class="keyword">float</span> nu = sg.Sharpness * <span class="number">0.5f</span>;</span><br><span class="line"> </span><br><span class="line">    ASG convolveASG;</span><br><span class="line">    convolveASG.BasisX = asg.BasisX;</span><br><span class="line">    convolveASG.BasisY = asg.BasisY;</span><br><span class="line">    convolveASG.BasisZ = asg.BasisZ;</span><br><span class="line"> </span><br><span class="line">    convolveASG.SharpnessX = (nu * asg.SharpnessX) /</span><br><span class="line">                             (nu + asg.SharpnessX);</span><br><span class="line">    convolveASG.SharpnessY = (nu * asg.SharpnessY) /</span><br><span class="line">                             (nu + asg.SharpnessY);</span><br><span class="line"> </span><br><span class="line">    convolveASG.Amplitude = Pi / <span class="built_in">sqrt</span>((nu + asg.SharpnessX) *</span><br><span class="line">                                 (nu + asg.SharpnessY));</span><br><span class="line"> </span><br><span class="line">    float3 asgResult = EvaluateASG(convolveASG, sg.Axis);</span><br><span class="line">    <span class="keyword">return</span> asgResult * sg.Amplitude * asg.Amplitude;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function">ASG <span class="title">WarpDistributionASG</span><span class="params">(in SG ndf, in float3 view)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    ASG warp;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// Generate any orthonormal basis with Z pointing in the</span></span><br><span class="line">    <span class="comment">// direction of the reflected view vector</span></span><br><span class="line">    warp.BasisZ = reflect(-view, ndf.Axis);</span><br><span class="line">    warp.BasisX = normalize(cross(ndf.Axis, warp.BasisZ));</span><br><span class="line">    warp.BasisY = normalize(cross(warp.BasisZ, warp.BasisX));</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">float</span> dotDirO = max(dot(view, ndf.Axis), <span class="number">0.0001f</span>);</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// Second derivative of the sharpness with respect to how</span></span><br><span class="line">    <span class="comment">// far we are from basis Axis direction</span></span><br><span class="line">    warp.SharpnessX = ndf.Sharpness / (<span class="number">8.0f</span> * dotDirO * dotDirO);</span><br><span class="line">    warp.SharpnessY = ndf.Sharpness / <span class="number">8.0f</span>;</span><br><span class="line"> </span><br><span class="line">    warp.Amplitude = ndf.Amplitude;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> warp;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function">float3 <span class="title">SpecularTermASGWarp</span><span class="params">(in SG light, in float3 normal,</span></span></span><br><span class="line"><span class="function"><span class="params">                           in <span class="keyword">float</span> roughness, in float3 view,</span></span></span><br><span class="line"><span class="function"><span class="params">                           in float3 specAlbedo)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// Create an SG that approximates the NDF</span></span><br><span class="line">    SG ndf = DistributionTermSG(normal, roughness);</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// Apply a warpring operation that will bring the SG from</span></span><br><span class="line">    <span class="comment">// the half-angle domain the the the lighting domain.</span></span><br><span class="line">    ASG warpedNDF = WarpDistributionASG(ndf, view);</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// Convolve the NDF with the light</span></span><br><span class="line">    float3 output = ConvolveASG_SG(warpedNDF, light);</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// Parameters needed for evaluating the visibility term</span></span><br><span class="line">    float3 warpDir = warpedNDF.BasisZ;</span><br><span class="line">    <span class="keyword">float</span> m2 = roughness * roughness;</span><br><span class="line">    <span class="keyword">float</span> nDotL = saturate(dot(normal, warpDir));</span><br><span class="line">    <span class="keyword">float</span> nDotV = saturate(dot(normal, view));</span><br><span class="line">    float3 h = normalize(warpDir + view);</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// Visibility term</span></span><br><span class="line">    output *= GGX_V1(m2, nDotL) * GGX_V1(m2, nDotV);</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// Fresnel</span></span><br><span class="line">    <span class="keyword">float</span> powTerm = <span class="built_in">pow</span>((<span class="number">1.0f</span> - saturate(dot(warpDir, h))), <span class="number">5</span>);</span><br><span class="line">    output *= specAlbedo + (<span class="number">1.0f</span> - specAlbedo) * powTerm;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// Cosine term</span></span><br><span class="line">    output *= nDotL;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> max(output, <span class="number">0.0f</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>使用各向异性扭曲后的高光效果看起来好了很多。<br><img src="/blog/2020/05/04/sg04/12.png" alt></p>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>总要恰饭的嘛</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/blog/images/wechatpay.png" alt="Alex Tsui 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/blog/images/alipay.jpg" alt="Alex Tsui 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/blog/tags/%E7%90%83%E9%9D%A2%E9%AB%98%E6%96%AF/" rel="tag"><i class="fa fa-tag"></i> 球面高斯</a>
+              <a href="/blog/tags/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" rel="tag"><i class="fa fa-tag"></i> 图形学</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/blog/2020/05/03/sg03/" rel="prev" title="球面高斯函数03——球面高斯光源的漫射照明">
+      <i class="fa fa-chevron-left"></i> 球面高斯函数03——球面高斯光源的漫射照明
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#微平面镜面反射"><span class="nav-number">1.</span> <span class="nav-text">微平面镜面反射</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#球面高斯光源的镜面反射"><span class="nav-number">2.</span> <span class="nav-text">球面高斯光源的镜面反射</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#D项"><span class="nav-number">2.1.</span> <span class="nav-text">D项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#域之间的扭曲"><span class="nav-number">2.2.</span> <span class="nav-text">域之间的扭曲</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#剩余项的近似"><span class="nav-number">2.3.</span> <span class="nav-text">剩余项的近似</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#各向异性"><span class="nav-number">3.</span> <span class="nav-text">各向异性</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Alex Tsui"
+      src="/blog/images/avatar.png">
+  <p class="site-author-name" itemprop="name">Alex Tsui</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/blog/archives/">
+        
+          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/blog/categories/">
+          
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/blog/tags/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2N1aWhvbmd6aGkxOTkx" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;cuihongzhi1991"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS9BbGV4VHN1aUNO" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;AlexTsuiCN"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+      <!--tag cloud-->
+      
+      <script type="text/javascript" charset="utf-8" src="/blog/js/tagcloud.js"></script>
+      <script type="text/javascript" charset="utf-8" src="/blog/js/tagcanvas.js"></script>
+        <div class="widget-wrap">
+          <h3 class="widget-title">Tag Cloud</h3>
+          <div id="myCanvasContainer" class="widget tagcloud">
+            <canvas width="250" height="250" id="resCanvas" style="width:100%">
+              <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/UE4/" rel="tag">UE4</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%85%89%E7%85%A7%E8%B4%B4%E5%9B%BE/" rel="tag">光照贴图</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%8D%A1%E9%80%9A%E7%9D%80%E8%89%B2/" rel="tag">卡通着色</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" rel="tag">图形学</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%9D%90%E8%B4%A8/" rel="tag">材质</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%B8%B2%E6%9F%93%E7%AE%A1%E7%BA%BF/" rel="tag">渲染管线</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E7%90%83%E9%9D%A2%E9%AB%98%E6%96%AF/" rel="tag">球面高斯</a><span class="tag-list-count">4</span></li></ul>
+            </canvas>
+          </div>
+        </div>
+      
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Alex Tsui</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/blog/lib/anime.min.js"></script>
+  <script src="/blog/lib/velocity/velocity.min.js"></script>
+  <script src="/blog/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/blog/js/utils.js"></script>
+
+<script src="/blog/js/motion.js"></script>
+
+
+<script src="/blog/js/schemes/pisces.js"></script>
+
+
+<script src="/blog/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://alextsui.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://cuihongzhi1991.github.io/2020/05/04/sg04/";
+    this.page.identifier = "2020/05/04/sg04/";
+    this.page.title = "球面高斯函数04——球面高斯光源的镜面高光";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://alextsui.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+
+</body>
+</html>
