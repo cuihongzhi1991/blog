@@ -40,7 +40,7 @@
 <meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/09.png">
 <meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/01/sg01/10.png">
 <meta property="article:published_time" content="2020-05-01T06:14:25.000Z">
-<meta property="article:modified_time" content="2020-05-03T21:53:04.007Z">
+<meta property="article:modified_time" content="2020-05-05T00:54:43.478Z">
 <meta property="article:author" content="Alex Tsui">
 <meta property="article:tag" content="球面高斯">
 <meta property="article:tag" content="光照贴图">
@@ -135,7 +135,7 @@
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/blog/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">8</span></a>
+    <a href="/blog/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">9</span></a>
 
   </li>
         <li class="menu-item menu-item-categories">
@@ -237,7 +237,7 @@
       
         <p>球面高斯函数(Spherical Gaussian, SG)是比较冷门的话题，但Ready At Dawn工作室却对其情有独钟，并使用在自研的游戏引擎中。其效果也经《教团：1886》得到验证。本系列是由Ready At Dawn工作室的首席图形和引擎工程师<em><span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS9NeU5hbWVJc01KUA==">Matt Pettineo<i class="fa fa-external-link-alt"></i></span></em>编写在自己的<em><span class="exturl" data-url="aHR0cHM6Ly9teW5hbWVpc21qcC53b3JkcHJlc3MuY29tLzIwMTYvMTAvMDkvbmV3LWJsb2ctc2VyaWVzLWxpZ2h0bWFwLWJha2luZy1hbmQtc3BoZXJpY2FsLWdhdXNzaWFucy8=">博客<i class="fa fa-external-link-alt"></i></span></em>。我将该系列的学习笔记记录于此，与大家分享。<br><a id="more"></a></p>
 <p>原作者把球面高斯函数及其应用分为6篇介绍：<br><div class="note primary no-icon">
-            <ul><li><a href="/blog/2020/05/01/sg01/" title="Part1-光照贴图简史">Part1-光照贴图简史</a></li><li><a href="/blog/2020/05/02/sg02/" title="Part2-球面高斯函数101">Part2-球面高斯函数101</a></li><li><a href="/blog/2020/05/03/sg03/" title="Part3-球面高斯光源的漫射照明">Part3-球面高斯光源的漫射照明</a></li><li><a href="/blog/2020/05/04/sg04/" title="Part4-球面高斯光源的镜面高光">Part4-球面高斯光源的镜面高光</a></li><li>Part5-用球面高斯函数近似辐射率和辐射度</li><li>Part6-Baking Lab的使用</li></ul>
+            <ul><li><a href="/blog/2020/05/01/sg01/" title="Part1-光照贴图简史">Part1-光照贴图简史</a></li><li><a href="/blog/2020/05/02/sg02/" title="Part2-球面高斯函数101">Part2-球面高斯函数101</a></li><li><a href="/blog/2020/05/03/sg03/" title="Part3-球面高斯光源的漫射照明">Part3-球面高斯光源的漫射照明</a></li><li><a href="/blog/2020/05/04/sg04/" title="Part4-球面高斯光源的镜面高光">Part4-球面高斯光源的镜面高光</a></li><li><a href="/blog/2020/05/05/sg05/" title="Part5-用球面高斯函数近似辐射率和辐射度">Part5-用球面高斯函数近似辐射率和辐射度</a></li><li>Part6-Baking Lab的使用</li></ul>
           </div>最后一部分是他制作的开源的光照贴图烘焙Demo的使用方法，暂且不纳入笔记范围。笔记将记录前五篇的主要内容。作为该系列的第一篇，会简单介绍一下研究球面高斯函数(Spherical Gaussians, SG)时需要的背景资料。重点讨论预烘焙的光照贴图或探针存储了什么信息，以及如何使用这些数据来计算漫反射或镜面反射。</p>
 <p>开始前，可以看一下文中用到的术语符号：<br><div class="note danger no-icon">
             <ul><li>$L_o$ -指向观察方向的出射光辐射率(radiance)</li><li>$L_i$ -表面入射点的入射光辐射率</li><li>o -观察方向(着色器光照计算中一般用V表示)</li><li>i  -光线入射方向(着色器光照计算中一般用L表示)</li><li>n -表面法向量</li><li>x -表面上某点的3D坐标</li><li>$\int_{\Omega}$ -半球积分</li><li>$\theta_i$ - 表面法线与入射光的夹角角度</li><li>$\theta_o$ - 表面法线与出射光的夹角角度</li><li>$f\left(\right)$ -BRDF</li></ul>
@@ -395,7 +395,7 @@ L_o(o,x) = \int_{\Omega}{} \frac{C_{diffuse}}{\pi}\cdot L_i(i,x)\cdot\cos(\theta
       <div class="site-state-item site-state-posts">
           <a href="/blog/archives/">
         
-          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-count">9</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -438,7 +438,7 @@ L_o(o,x) = \int_{\Omega}{} \frac{C_{diffuse}}{\pi}\cdot L_i(i,x)\cdot\cos(\theta
           <h3 class="widget-title">Tag Cloud</h3>
           <div id="myCanvasContainer" class="widget tagcloud">
             <canvas width="250" height="250" id="resCanvas" style="width:100%">
-              <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/UE4/" rel="tag">UE4</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%85%89%E7%85%A7%E8%B4%B4%E5%9B%BE/" rel="tag">光照贴图</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%8D%A1%E9%80%9A%E7%9D%80%E8%89%B2/" rel="tag">卡通着色</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" rel="tag">图形学</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%9D%90%E8%B4%A8/" rel="tag">材质</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%B8%B2%E6%9F%93%E7%AE%A1%E7%BA%BF/" rel="tag">渲染管线</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E7%90%83%E9%9D%A2%E9%AB%98%E6%96%AF/" rel="tag">球面高斯</a><span class="tag-list-count">4</span></li></ul>
+              <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/UE4/" rel="tag">UE4</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%85%89%E7%85%A7%E8%B4%B4%E5%9B%BE/" rel="tag">光照贴图</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%8D%A1%E9%80%9A%E7%9D%80%E8%89%B2/" rel="tag">卡通着色</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" rel="tag">图形学</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%9D%90%E8%B4%A8/" rel="tag">材质</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%B8%B2%E6%9F%93%E7%AE%A1%E7%BA%BF/" rel="tag">渲染管线</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E7%90%83%E9%9D%A2%E9%AB%98%E6%96%AF/" rel="tag">球面高斯</a><span class="tag-list-count">5</span></li></ul>
             </canvas>
           </div>
         </div>

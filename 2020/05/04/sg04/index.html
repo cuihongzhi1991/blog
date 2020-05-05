@@ -41,7 +41,7 @@
 <meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/04/sg04/11.png">
 <meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/04/sg04/12.png">
 <meta property="article:published_time" content="2020-05-04T06:14:25.000Z">
-<meta property="article:modified_time" content="2020-05-04T14:52:58.692Z">
+<meta property="article:modified_time" content="2020-05-05T00:54:29.557Z">
 <meta property="article:author" content="Alex Tsui">
 <meta property="article:tag" content="球面高斯">
 <meta property="article:tag" content="图形学">
@@ -135,7 +135,7 @@
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/blog/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">8</span></a>
+    <a href="/blog/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">9</span></a>
 
   </li>
         <li class="menu-item menu-item-categories">
@@ -237,7 +237,7 @@
       
         <p>上篇文章中，讨论了使用漫反射BRDF时如何计算球面高斯光源的分布。下面可以讨论如何计算与视角有关的更复杂的BRDF，这样就可以得到高光的分布。本文会介绍如何逼近基于微表面的镜面反射BRDF对球面高斯光源的反应情况，并且会介绍各向异性球面高斯的概念。<br><a id="more"></a></p>
 <p>本系列的其他文章可以点击下方链接跳转。<br><div class="note primary no-icon">
-            <ul><li><a href="/blog/2020/05/01/sg01/" title="Part1-光照贴图简史">Part1-光照贴图简史</a></li><li><a href="/blog/2020/05/02/sg02/" title="Part2-球面高斯函数101">Part2-球面高斯函数101</a></li><li><a href="/blog/2020/05/03/sg03/" title="Part3-球面高斯光源的漫射照明">Part3-球面高斯光源的漫射照明</a></li><li><a href="/blog/2020/05/04/sg04/" title="Part4-球面高斯光源的镜面高光">Part4-球面高斯光源的镜面高光</a></li><li>Part5-用球面高斯函数近似辐射率和辐射度</li></ul>
+            <ul><li><a href="/blog/2020/05/01/sg01/" title="Part1-光照贴图简史">Part1-光照贴图简史</a></li><li><a href="/blog/2020/05/02/sg02/" title="Part2-球面高斯函数101">Part2-球面高斯函数101</a></li><li><a href="/blog/2020/05/03/sg03/" title="Part3-球面高斯光源的漫射照明">Part3-球面高斯光源的漫射照明</a></li><li><a href="/blog/2020/05/04/sg04/" title="Part4-球面高斯光源的镜面高光">Part4-球面高斯光源的镜面高光</a></li><li><a href="/blog/2020/05/05/sg05/" title="Part5-用球面高斯函数近似辐射率和辐射度">Part5-用球面高斯函数近似辐射率和辐射度</a></li></ul>
           </div></p>
 <h2 id="微平面镜面反射"><a href="#微平面镜面反射" class="headerlink" title="微平面镜面反射"></a>微平面镜面反射</h2><p>迪士尼提出的基于物理的渲染公式是当下实时渲染领域比较流行，应用最广的。其中基于微平面的镜面反射BRDF如下：</p>
 <script type="math/tex; mode=display">\begin{align}
@@ -330,7 +330,10 @@ G(v;[\mu_x, \mu_y, \mu_z], [\lambda_x, \lambda_y],a) = a\cdot S(v,\mu_z)e^{-\lam
     <a href="/blog/2020/05/03/sg03/" rel="prev" title="球面高斯函数03——球面高斯光源的漫射照明">
       <i class="fa fa-chevron-left"></i> 球面高斯函数03——球面高斯光源的漫射照明
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/blog/2020/05/05/sg05/" rel="next" title="球面高斯函数05——用球面高斯函数近似辐射率和辐射度">
+      球面高斯函数05——用球面高斯函数近似辐射率和辐射度 <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -412,7 +415,7 @@ G(v;[\mu_x, \mu_y, \mu_z], [\lambda_x, \lambda_y],a) = a\cdot S(v,\mu_z)e^{-\lam
       <div class="site-state-item site-state-posts">
           <a href="/blog/archives/">
         
-          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-count">9</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -455,7 +458,7 @@ G(v;[\mu_x, \mu_y, \mu_z], [\lambda_x, \lambda_y],a) = a\cdot S(v,\mu_z)e^{-\lam
           <h3 class="widget-title">Tag Cloud</h3>
           <div id="myCanvasContainer" class="widget tagcloud">
             <canvas width="250" height="250" id="resCanvas" style="width:100%">
-              <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/UE4/" rel="tag">UE4</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%85%89%E7%85%A7%E8%B4%B4%E5%9B%BE/" rel="tag">光照贴图</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%8D%A1%E9%80%9A%E7%9D%80%E8%89%B2/" rel="tag">卡通着色</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" rel="tag">图形学</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%9D%90%E8%B4%A8/" rel="tag">材质</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%B8%B2%E6%9F%93%E7%AE%A1%E7%BA%BF/" rel="tag">渲染管线</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E7%90%83%E9%9D%A2%E9%AB%98%E6%96%AF/" rel="tag">球面高斯</a><span class="tag-list-count">4</span></li></ul>
+              <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/UE4/" rel="tag">UE4</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%85%89%E7%85%A7%E8%B4%B4%E5%9B%BE/" rel="tag">光照贴图</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%8D%A1%E9%80%9A%E7%9D%80%E8%89%B2/" rel="tag">卡通着色</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" rel="tag">图形学</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%9D%90%E8%B4%A8/" rel="tag">材质</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%B8%B2%E6%9F%93%E7%AE%A1%E7%BA%BF/" rel="tag">渲染管线</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E7%90%83%E9%9D%A2%E9%AB%98%E6%96%AF/" rel="tag">球面高斯</a><span class="tag-list-count">5</span></li></ul>
             </canvas>
           </div>
         </div>

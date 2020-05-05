@@ -21,30 +21,40 @@
     var CONFIG = {"hostname":"cuihongzhi1991.github.io","root":"/blog/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"disqus","storage":true,"lazyload":false,"nav":null,"activeClass":"disqus"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="本篇是球面高斯函数与预计算光照系列的第三部分，上篇文章提到了球面高斯函数的一些属性，本文会讨论如何在渲染场景中使用这些属性并发挥它们的优势。">
+  <meta name="description" content="这是本系列最后一篇笔记。前两篇讨论了如何在使用球面高斯光源时近似出漫反射和镜面反射。但依然没有说明为什么要使用球面高斯光源照亮场景。回顾本系列第一篇的内容，讨论的是如何将预计算的辐射率和辐射度存储在光照贴图或探针网格中。这也是最后一篇要讨论的主题。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="球面高斯函数03——球面高斯光源的漫射照明">
-<meta property="og:url" content="https://cuihongzhi1991.github.io/2020/05/03/sg03/index.html">
+<meta property="og:title" content="球面高斯函数05——用球面高斯函数近似辐射率和辐射度">
+<meta property="og:url" content="https://cuihongzhi1991.github.io/2020/05/05/sg05/index.html">
 <meta property="og:site_name" content="Alex Technical Art">
-<meta property="og:description" content="本篇是球面高斯函数与预计算光照系列的第三部分，上篇文章提到了球面高斯函数的一些属性，本文会讨论如何在渲染场景中使用这些属性并发挥它们的优势。">
+<meta property="og:description" content="这是本系列最后一篇笔记。前两篇讨论了如何在使用球面高斯光源时近似出漫反射和镜面反射。但依然没有说明为什么要使用球面高斯光源照亮场景。回顾本系列第一篇的内容，讨论的是如何将预计算的辐射率和辐射度存储在光照贴图或探针网格中。这也是最后一篇要讨论的主题。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/03/sg03/01.png">
-<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/03/sg03/02.png">
-<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/03/sg03/03.png">
-<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/03/sg03/04.png">
-<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/03/sg03/05.png">
-<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/03/sg03/06.png">
-<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/03/sg03/07.png">
-<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/03/sg03/08.png">
-<meta property="article:published_time" content="2020-05-03T06:14:25.000Z">
-<meta property="article:modified_time" content="2020-05-05T00:54:35.843Z">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/05/sg05/01.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/05/sg05/02.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/05/sg05/03.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/05/sg05/04.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/05/sg05/05.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/05/sg05/06.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/05/sg05/07.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/05/sg05/08.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/05/sg05/09.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/05/sg05/10.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/05/sg05/11.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/05/sg05/12.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/05/sg05/13.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/05/sg05/14.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/05/sg05/15.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/05/sg05/16.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/05/sg05/17.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/05/sg05/18.png">
+<meta property="article:published_time" content="2020-05-05T06:14:25.000Z">
+<meta property="article:modified_time" content="2020-05-05T05:18:02.483Z">
 <meta property="article:author" content="Alex Tsui">
 <meta property="article:tag" content="球面高斯">
 <meta property="article:tag" content="图形学">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://cuihongzhi1991.github.io/blog/2020/05/03/sg03/01.png">
+<meta name="twitter:image" content="https://cuihongzhi1991.github.io/blog/2020/05/05/sg05/01.png">
 
-<link rel="canonical" href="https://cuihongzhi1991.github.io/2020/05/03/sg03/">
+<link rel="canonical" href="https://cuihongzhi1991.github.io/2020/05/05/sg05/">
 
 
 <script id="page-configurations">
@@ -57,7 +67,7 @@
   };
 </script>
 
-  <title>球面高斯函数03——球面高斯光源的漫射照明 | Alex Technical Art</title>
+  <title>球面高斯函数05——用球面高斯函数近似辐射率和辐射度 | Alex Technical Art</title>
   
 
 
@@ -171,7 +181,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://cuihongzhi1991.github.io/2020/05/03/sg03/">
+    <link itemprop="mainEntityOfPage" href="https://cuihongzhi1991.github.io/2020/05/05/sg05/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/blog/images/avatar.png">
@@ -184,7 +194,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          球面高斯函数03——球面高斯光源的漫射照明
+          球面高斯函数05——用球面高斯函数近似辐射率和辐射度
         </h1>
 
         <div class="post-meta">
@@ -194,7 +204,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-05-03 14:14:25" itemprop="dateCreated datePublished" datetime="2020-05-03T14:14:25+08:00">2020-05-03</time>
+              <time title="创建时间：2020-05-05 14:14:25" itemprop="dateCreated datePublished" datetime="2020-05-05T14:14:25+08:00">2020-05-05</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -215,8 +225,8 @@
       </span>
       <span class="post-meta-item-text">Disqus：</span>
     
-    <a title="disqus" href="/blog/2020/05/03/sg03/#disqus_thread" itemprop="discussionUrl">
-      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/05/03/sg03/" itemprop="commentCount"></span>
+    <a title="disqus" href="/blog/2020/05/05/sg05/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/05/05/sg05/" itemprop="commentCount"></span>
     </a>
   </span>
   
@@ -231,30 +241,39 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>本篇是球面高斯函数与预计算光照系列的第三部分，上篇文章提到了球面高斯函数的一些属性，本文会讨论如何在渲染场景中使用这些属性并发挥它们的优势。<br><a id="more"></a></p>
+        <p>这是本系列最后一篇笔记。前两篇讨论了如何在使用球面高斯光源时近似出漫反射和镜面反射。但依然没有说明为什么要使用球面高斯光源照亮场景。回顾本系列第一篇的内容，讨论的是如何将预计算的辐射率和辐射度存储在光照贴图或探针网格中。这也是最后一篇要讨论的主题。<br><a id="more"></a></p>
 <p>本系列的其他文章可以点击下方链接跳转。<br><div class="note primary no-icon">
             <ul><li><a href="/blog/2020/05/01/sg01/" title="Part1-光照贴图简史">Part1-光照贴图简史</a></li><li><a href="/blog/2020/05/02/sg02/" title="Part2-球面高斯函数101">Part2-球面高斯函数101</a></li><li><a href="/blog/2020/05/03/sg03/" title="Part3-球面高斯光源的漫射照明">Part3-球面高斯光源的漫射照明</a></li><li><a href="/blog/2020/05/04/sg04/" title="Part4-球面高斯光源的镜面高光">Part4-球面高斯光源的镜面高光</a></li><li><a href="/blog/2020/05/05/sg05/" title="Part5-用球面高斯函数近似辐射率和辐射度">Part5-用球面高斯函数近似辐射率和辐射度</a></li></ul>
           </div></p>
-<h2 id="天降高斯"><a href="#天降高斯" class="headerlink" title="天降高斯"></a>天降高斯</h2><p>假设表面的一个点x被光源L照亮，该光源由名为$G_L$的球面高斯函数表示。那么使用兰伯特漫反射BRDF计算出射光辐射率就是下方的公式：</p>
+<h2 id="寻找最佳匹配度"><a href="#寻找最佳匹配度" class="headerlink" title="寻找最佳匹配度"></a>寻找最佳匹配度</h2><p>数学(尤其是统计学)中的一个常见过程就是获取一组数据点，尝试找出某种可以表示数据的分析曲线，这个过程被称为曲线拟合。也可以认为是一种有损压缩，因为几百个数据点可能需要上千字节的数据，但如果用曲线去近似可能只需要存储几个字节。下图是维基百科的一个示例，图像中有一堆需要去拟合的点，这些数据点来自于正弦波，但实际上可能是各种各样的形式。下方的公式分别对应红线，绿线，橙线和蓝线。<br><img src="/blog/2020/05/05/sg05/01.png" alt></p>
 <script type="math/tex; mode=display">\begin{align}
-L_o(o,x) = \int_{\Omega}{}f(i,o,x)\cdot L_i(i,x)\cdot\cos(\theta_i)\cdot{d}\Omega \nonumber
-\end{align}</script><p>对于精确光源来讲，本质上就是按比例缩放的三角函数，计算起来像$N\cdot{L}$一样简单。但如果使用区域光就会遇到麻烦，因为该积分没有闭式解。假设有一个奇特的高斯光源，它的角衰减可以由球面高斯函数精确地表示。如果在渲染公式中将高斯光源作为$L_i$，那么就是一个球面高斯函数与被限制范围(0-1)的余弦波做点积。上篇文章中提到过两个球面高斯做积运算的过程，那么不妨尝试将余弦波拟合成一个球面高斯函数，这样渲染公式中就是将两个球面高斯函数乘积的结果做积分了。根据Jiaping Wang等人的论文《All-Frequency Rendering of Dynamic, Spatially-Varing Reflectance》中的方法，将余弦波拟合到单个球面高斯函数时，$\lambda$=2.133，a=1.17。代码中的实现就会变成：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">SG <span class="title">CosineLobeSG</span><span class="params">(in float3 direction)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    SG cosineLobe;</span><br><span class="line">    cosineLobe.Axis = direction;</span><br><span class="line">    cosineLobe.Sharpness = <span class="number">2.133f</span>;</span><br><span class="line">    cosineLobe.Amplitude = <span class="number">1.17f</span>;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> cosineLobe;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function">float3 <span class="title">SGIrradianceInnerProduct</span><span class="params">(in SG lightingLobe,</span></span></span><br><span class="line"><span class="function"><span class="params">                                in float3 normal)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    SG cosineLobe = CosineLobeSG(normal);</span><br><span class="line">    <span class="keyword">return</span> max(SGInnerProduct(lightingLobe, cosineLobe), <span class="number">0.0f</span>);</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function">float3 <span class="title">SGDiffuseInnerProduct</span><span class="params">(in SG lightingLobe, in float3 normal,</span></span></span><br><span class="line"><span class="function"><span class="params">                             in float3 albedo)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    float3 brdf = albedo / Pi;</span><br><span class="line">    <span class="keyword">return</span> SGIrradianceInnerProduct(lightingLobe, normal) * brdf;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<h2 id="误差分析"><a href="#误差分析" class="headerlink" title="误差分析"></a>误差分析</h2><p>毕竟是余弦波的近似值，肯定会有误差。最好的办法就是对比两者的曲线：<br><img src="/blog/2020/05/03/sg03/01.png" alt></p>
-<p>仅从图表上看，球面高斯显然与余弦波不太匹配。首先，波峰值超过了1，但必须确保曲线下方的面积与余弦波瓣尽量保持一致否则会导致能量损失。另外，球面高斯在球面上的任何地方的值都没有达到0，所以有很长的拖尾。这就意味着当逼近余弦波的球面高斯与精确光源进行积分时，光照会包裹整个球体，超过了N·L等于0的点。不过这种情况与球谐函数有类似之处，球谐函数也超过了$\frac{\pi}{2}$的位置，如下图所示：<br><img src="/blog/2020/05/03/sg03/02.png" alt></p>
-<p>使用球谐函数的情况下，近似值其实已经是负值了，或许比球面高斯的长拖尾更糟糕。L1球谐函数的近似值很差，L2球谐的近似值效果尚可。下图从左至右：振幅0-1的余弦波，逼近余弦波的球面高斯函数，L2球谐函数。<br><img src="/blog/2020/05/03/sg03/03.png" alt></p>
-<p>下面再看一下与球面高斯光源做计算得到漫反射光照的结果。蓝线代表双球面高斯做点积(球面高斯光源与逼近余弦波的球面高斯)。与之对比的是brute-froce数值积分求出的球面高斯与(振幅0-1)的余弦波的乘积。如图所示(球面高斯光源锐度=4.0)：<br><img src="/blog/2020/05/03/sg03/04.png" alt></p>
-<p>误差来自于对(振幅0-1)余弦波的近似球面高斯，而不是两个球面高斯点积的过程。最终辐射度的区别不是特别大，明显的区别就是背光区域，由双球面高斯点积的长拖尾导致的。下图使用锐度4.0的球面高斯光源，左为蒙特卡洛重要性采样计算的辐射度，右为与逼近余弦的球面高斯点积所得到的辐射度。<br><img src="/blog/2020/05/03/sg03/05.png" alt></p>
-<h2 id="开销更低的近似方式"><a href="#开销更低的近似方式" class="headerlink" title="开销更低的近似方式"></a>开销更低的近似方式</h2><p>上篇文章提到过球面高斯的另外一个优点——波瓣绕轴对称，并且也讨论过如何计算球面的球面高斯积分从而获得总能量。那么可以尝试从积分中提出一些项，仅对球面高斯的轴朝向做计算。这必然会引入一些误差，但如果提出的项比较平滑，那误差还是可以接受的。公式的变化如下：</p>
-<script type="math/tex; mode=display">\begin{align}
-L_o(o,x) = \frac{C_{diffuse}}{\pi}\int_{\Omega}{}G_L(i;\mu,\lambda,a)\cos(\theta_i){d}\Omega \nonumber  
+y = c_0 + c_1 \cdot x \nonumber
 \end{align}</script><script type="math/tex; mode=display">\begin{align}
-L_o(o,x) \approx \cos(\theta_\mu)\frac{C_{diffuse}}{\pi}\int_{\Omega}{}G_L(i;\mu,\lambda,a){d}\Omega \nonumber  
-\end{align}</script><p>HLSL代码如下：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">float3 <span class="title">SGIrradiancePunctual</span><span class="params">(in SG lightingLobe, in float3 normal)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">float</span> cosineTerm = saturate(dot(lightingLobe.Axis, normal));</span><br><span class="line">    <span class="keyword">return</span> cosineTerm * <span class="number">2.0f</span> * Pi * (lightingLobe.Amplitude) /</span><br><span class="line">                                     lightingLobe.Sharpness;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function">float3 <span class="title">SGDiffusePunctual</span><span class="params">(in SG lightingLobe, in float3 normal,</span></span></span><br><span class="line"><span class="function"><span class="params">                         in float3 albedo)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    float3 brdf = albedo / Pi;</span><br><span class="line">    <span class="keyword">return</span> SGIrradiancePunctual(lightingLobe, normal) * brdf;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>如果将这种近似方式以曲线形式和之前的作比较，会看出较大的差别。<br><img src="/blog/2020/05/03/sg03/06.png" alt></p>
-<p>可以发现绿线代表的是开销较低的近似方式，而曲线的走势是限制范围的余弦波的缩放版本。但是这种近似方式开销非常低，已经将球面高斯函数转成了点光源。</p>
-<h2 id="更精确的近似"><a href="#更精确的近似" class="headerlink" title="更精确的近似"></a>更精确的近似</h2><p>Stephen Hill提出了一种与球面高斯和余弦波积分匹配度非常高的近似方式。他的实现是针对归一化的球面高斯的，但是我们可以计算积分并缩放得到我们需要的结果。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">float3 <span class="title">SGIrradianceFitted</span><span class="params">(in SG lightingLobe, in float3 normal)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">float</span> muDotN = dot(lightingLobe.Axis, normal);</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">float</span> lambda = lightingLobe.Sharpness;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">float</span> c0 = <span class="number">0.36f</span>;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">float</span> c1 = <span class="number">1.0f</span> / (<span class="number">4.0f</span> * c0);</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">float</span> eml  = <span class="built_in">exp</span>(-lambda);</span><br><span class="line">    <span class="keyword">float</span> em2l = eml * eml;</span><br><span class="line">    <span class="keyword">float</span> rl   = rcp(lambda);</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">float</span> scale = <span class="number">1.0f</span> + <span class="number">2.0f</span> * em2l - rl;</span><br><span class="line">    <span class="keyword">float</span> bias  = (eml - em2l) * rl - em2l;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">float</span> x  = <span class="built_in">sqrt</span>(<span class="number">1.0f</span> - scale);</span><br><span class="line">    <span class="keyword">float</span> x0 = c0 * muDotN;</span><br><span class="line">    <span class="keyword">float</span> x1 = c1 * x;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">float</span> n = x0 + x1;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">float</span> y = saturate(muDotN);</span><br><span class="line">    <span class="keyword">if</span>(<span class="built_in">abs</span>(x0) &lt;= x1)</span><br><span class="line">        y = n * n / x;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">float</span> result = scale * y + bias;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> result * ApproximateSGIntegral(lightingLobe);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>其结果非常接近实际情况，并且可能开销比两个球面高斯点积更低。<br><img src="/blog/2020/05/03/sg03/07.png" alt></p>
-<p>在球体上对比结果——左侧是两个球面高斯点积，中间是蒙特卡洛重要性采样所得结果，右侧是Stephen Hill的近似方式。<br><img src="/blog/2020/05/03/sg03/08.png" alt></p>
+y = c_0 + c_1 \cdot x + c_2 \cdot x^2 \nonumber
+\end{align}</script><script type="math/tex; mode=display">\begin{align}
+y = c_0 + c_1 \cdot x + c_2 \cdot x^2  + c_3 \cdot x^3 \nonumber
+\end{align}</script><script type="math/tex; mode=display">\begin{align}
+y = c_0 + c_1 \cdot x + c_2 \cdot x^2  + c_3 \cdot x^3 + c_4\cdot x^4\nonumber
+\end{align}</script><p>从上图可以看出更复杂的公式可以形成更复杂的曲线，但需要更多的系数，需要存储更多的数据，并意味着拟合过程更加困难或开销越大。用于拟合的常见技术之一是最小二乘法，将拟合曲线和原始数据差异的总和进行最小化。</p>
+<p>另外可以发现最终的拟合曲线其实是多个基函数的线性组合，如$x,x^2,x^3$等。其实可以使用其他的基函数来代替，比如高斯函数！同多项式一样，高斯的总和可以用少数几个系数表示更复杂的函数。例如，根据一些点使用最小二乘法拟合不同数量的高斯函数,下图左显示了一个高斯拟合，图中为两个高斯拟合，图右是三个高斯拟合。<br><img src="/blog/2020/05/05/sg05/02.png" alt></p>
+<p>不难发现，添加更多高斯函数时，拟合的结果更接近原始数据。</p>
+<h2 id="球面拟合"><a href="#球面拟合" class="headerlink" title="球面拟合"></a>球面拟合</h2><p>这种拟合数据的方式不仅可以作用于一维的数据集，也可以是多维度的。例如在一个由2维球面坐标系定义的球面上有一些随机方向的样本。假设这些样板代表在该方向上无限狭窄的入射光。如果对这些数据进行最小二乘法，则得到N个球面高斯，它们相加之和可以作为球面上任意方向上辐射率的近似值。只需要拟合算法可以得出每个球面高斯的轴向，振幅和锐度，或者提前固定一些球面高斯的参数值，然后仅拟合其余参数。与庞大的辐射率样本相比，一组球面高斯系数占用的存储空间是非常少的。但如果仅使用几个球面高斯函数，得到的近似值相比原始数据会丢失很多细节。但这与球谐函数等其他存储辐射率或辐射度近似值的方式没有什么区别。下图使用HDR环境贴图作为输入数据，分别用12个和24个球面高斯做最小二乘法拟合之后的结果。<br><img src="/blog/2020/05/05/sg05/03.png" alt></p>
+<p>要注意的是，该拟合值作用于球面高斯的振幅上，轴向和锐度是基于球面高斯的数量提前确定好的。求解单个参数允许使用线性最小二乘法，同时拟合所有参数需要使用复杂和开销大的非线性最小二乘法。求解较少的参数降低了存储成本，因为每个探针只需要存储振幅，轴向和锐度可以用全局的常量控制。当然，增加波瓣的数量会增加复杂性和清晰度，会保留原始图像更多的高频细节。</p>
+<h2 id="负数"><a href="#负数" class="headerlink" title="负数"></a>负数</h2><p>球谐函数多项式中使用了负系数所以会有“Ringing”效果，球面高斯也有类似问题。上图中的球面右下角有过暗的区域。最小二乘法为了减少拟合的误差，某些波瓣返回了负系数。假如是一维的情况，有一个连续性很差的点集。用最小二乘法使两个高斯波瓣去拟合，情况如下。<br><img src="/blog/2020/05/05/sg05/04.png" alt> <img src="/blog/2020/05/05/sg05/05.png" alt></p>
+<p>优化过程中，第一个波瓣的振幅为正，第二个波瓣的振幅为负。这就导致了最终会有过暗的区域。第一篇笔记中有提到过球谐函数的类似情况以及解决办法。<br><img src="/blog/2020/05/05/sg05/06.png" alt></p>
+<p>那么我们需要给最小二乘法加上约束保证返回正系数。好在已经有了名为非负最小二乘法(non-negative least squares, NNLS)。如果使用该方法用球面高斯拟合原始的辐射率，那么结果会自然和正确很多。下图是HDR环境贴图、12个和24个球面高斯使用NNLS拟合之后的结果。<br><img src="/blog/2020/05/05/sg05/07.png" alt></p>
+<p>虽然右下角的明暗趋于正常了，但代价是相比原来的方式，近似的结果更加的模糊。</p>
+<h2 id="辐射度比较"><a href="#辐射度比较" class="headerlink" title="辐射度比较"></a>辐射度比较</h2><p>下面使用不同方式近似辐射率，使用辐射率直接计算出兰伯特漫反射光照的辐射度并比较它们的结果。<br><img src="/blog/2020/05/05/sg05/08.png" alt></p>
+<p>除了Ambient Cubemap，其他的近似值都很好。但该HDR环境贴图的照明比较柔和，不容易看出问题，下面使用明暗变化比较极端的HDR环境贴图进行比较。<br><img src="/blog/2020/05/05/sg05/09.png" alt></p>
+<p>这次的差异就比较明显了。有大面积的明亮光源的情况，球面高斯的效果更胜一筹，尤其是NNLS版本的12个球面高斯。</p>
+<p>因为波瓣方向和锐度都是固定值，那么只需要储存振幅的数据即可。即12个球面高斯波瓣的存储成本等于12组RGB系数(总共36个浮点数)。L2的球谐函数需要9组RGB系数(27个浮点数)。环境立方体贴图仅需要6组RGB系数，仅为球面高斯的一半，所以使用球面高斯需要更多存储空间。然而换个角度，这也是球面高斯的优点。立方体贴图只能使用6个波瓣，职业才可以保持正交性；而球面高斯可以根据质量、性能和存储成本使用任意数量的波瓣。</p>
+<h2 id="半球拟合"><a href="#半球拟合" class="headerlink" title="半球拟合"></a>半球拟合</h2><p>因为实际烘焙光照时，样本点存在于模型表面，所以有一半的球体是位于模型背面的，计算这部分是毫无意义的。我们只需要对模型表面的半球部分做光照的预计算然后存储起来即可。而对于球面高斯来说是很好修改的，只需要求解位于围绕面法线的上半球内的波瓣即可。<br><img src="/blog/2020/05/05/sg05/10.png" alt></p>
+<p>采样整个场景为光照贴图每个纹素生成辐射率的近似值，最好的方式是使用光线追踪器(ray tracer)，使用诸如路径跟踪(path tracing)之类的算法来计算特定光线的入射辐射率。下图展示了一个场景的光照贴图的可视化效果，为光照贴图每个纹素生成半球辐射率探针，每个探针使用9个围绕面法线朝向的球面高斯。<br><img src="/blog/2020/05/05/sg05/11.png" alt></p>
+<h2 id="镜面反射"><a href="#镜面反射" class="headerlink" title="镜面反射"></a>镜面反射</h2><p>上篇文章介绍了如何从球面高斯光源计算出镜面反射项。那么在近似入射辐射率方面使用该方式。可以计算出整个场景镜面反射的近似效果。数量较少的波瓣只能应对粗糙度较高的材质，因为球面高斯对入射辐射率的近似不能捕获环境的高频细节。下图是粗糙度为0.25的GGX分布项的测试场景。<br><img src="/blog/2020/05/05/sg05/12.png" alt></p>
+<p>与真实的效果相比，球面高斯在某些地方的近似不错，在某些地方的近似差一些。但总体来说比L2的球谐函数结果好不少，而且存储成本相同(27个浮点数)。球谐函数使用3D查找纹理存储预计算的球谐系数，如果仔细观察垂直相机的墙面就可以看到插值导致的瑕疵。</p>
+<h2 id="《教团-1886》中的实现"><a href="#《教团-1886》中的实现" class="headerlink" title="《教团:1886》中的实现"></a>《教团:1886》中的实现</h2><p>对于场景中的静态网格体，在2D光照贴图中储存5-12个轴向和锐度值固定的球面高斯波瓣。对于动态的网格体，会提前烘焙包含球形探针的3D Grid到3D纹理中，每个探针有9个球面高斯波瓣。3D Grid是由灯光艺术家在场景中手动摆放的。然后在计算每个像素的光照前，利用硬件的纹理过滤在相邻的探针间做插值。</p>
+<p>早期的测试是用CPU烘焙的，但最终使用的是CUDA烘焙工具做GPU烘焙，将计算结果投影到球面高斯波瓣上。下图比较了计算球面高斯波瓣计算的辐射率近似值。<br><img src="/blog/2020/05/05/sg05/13.png" alt></p>
+<p>为了性能和存储考虑，没有使用太多的球面高斯波瓣，这样在粗糙度较低的材质表面就会丢失很多细节。所以最终的方案是基于模型表面材质粗糙度在环境贴图和光照贴图两者中做选择，并在很小的区域内将两者的镜面反射进行混合。<br><img src="/blog/2020/05/05/sg05/14.png" alt> <img src="/blog/2020/05/05/sg05/15.png" alt> <img src="/blog/2020/05/05/sg05/16.png" alt> <img src="/blog/2020/05/05/sg05/17.png" alt> <img src="/blog/2020/05/05/sg05/18.png" alt></p>
 
     </div>
 
@@ -295,13 +314,10 @@ L_o(o,x) \approx \cos(\theta_\mu)\frac{C_{diffuse}}{\pi}\int_{\Omega}{}G_L(i;\mu
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/blog/2020/05/02/sg02/" rel="prev" title="球面高斯函数02——球面高斯函数101">
-      <i class="fa fa-chevron-left"></i> 球面高斯函数02——球面高斯函数101
+    <a href="/blog/2020/05/04/sg04/" rel="prev" title="球面高斯函数04——球面高斯光源的镜面高光">
+      <i class="fa fa-chevron-left"></i> 球面高斯函数04——球面高斯光源的镜面高光
     </a></div>
-      <div class="post-nav-item">
-    <a href="/blog/2020/05/04/sg04/" rel="next" title="球面高斯函数04——球面高斯光源的镜面高光">
-      球面高斯函数04——球面高斯光源的镜面高光 <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -367,7 +383,7 @@ L_o(o,x) \approx \cos(\theta_\mu)\frac{C_{diffuse}}{\pi}\int_{\Omega}{}G_L(i;\mu
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#天降高斯"><span class="nav-number">1.</span> <span class="nav-text">天降高斯</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#误差分析"><span class="nav-number">2.</span> <span class="nav-text">误差分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#开销更低的近似方式"><span class="nav-number">3.</span> <span class="nav-text">开销更低的近似方式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#更精确的近似"><span class="nav-number">4.</span> <span class="nav-text">更精确的近似</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#寻找最佳匹配度"><span class="nav-number">1.</span> <span class="nav-text">寻找最佳匹配度</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#球面拟合"><span class="nav-number">2.</span> <span class="nav-text">球面拟合</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#负数"><span class="nav-number">3.</span> <span class="nav-text">负数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#辐射度比较"><span class="nav-number">4.</span> <span class="nav-text">辐射度比较</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#半球拟合"><span class="nav-number">5.</span> <span class="nav-text">半球拟合</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#镜面反射"><span class="nav-number">6.</span> <span class="nav-text">镜面反射</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#《教团-1886》中的实现"><span class="nav-number">7.</span> <span class="nav-text">《教团:1886》中的实现</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -574,9 +590,9 @@ L_o(o,x) \approx \cos(\theta_\mu)\frac{C_{diffuse}}{\pi}\int_{\Omega}{}G_L(i;\mu
 </script>
 <script>
   var disqus_config = function() {
-    this.page.url = "https://cuihongzhi1991.github.io/2020/05/03/sg03/";
-    this.page.identifier = "2020/05/03/sg03/";
-    this.page.title = "球面高斯函数03——球面高斯光源的漫射照明";
+    this.page.url = "https://cuihongzhi1991.github.io/2020/05/05/sg05/";
+    this.page.identifier = "2020/05/05/sg05/";
+    this.page.title = "球面高斯函数05——用球面高斯函数近似辐射率和辐射度";
     };
   NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
     if (window.DISQUS) {
