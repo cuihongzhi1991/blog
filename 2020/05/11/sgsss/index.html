@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/blog/images/apple-touch-icon-alex.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/blog/images/favicon-32x32-alex.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/blog/images/favicon-16x16-alex.png">
+  <link rel="mask-icon" href="/blog/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="MtLzwmTs3a2ZnDBFhocKgVUp2SOlNOwwXgBdgGt482I">
+
+<link rel="stylesheet" href="/blog/css/main.css">
+
+
+<link rel="stylesheet" href="/blog/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"cuihongzhi1991.github.io","root":"/blog/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"disqus","storage":true,"lazyload":false,"nav":null,"activeClass":"disqus"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="目前一些移动端的皮肤材质采用的是2011年Eric分享的Pre-integrated Skin Shading的精简版，主要是利用$N\cdot L$与模型表面的曲率去采样预计算的LUT图，并将结果作为新的NoL来计算漫反射的颜色。但现在很多3D手游的带宽比较吃紧，而ALU占用率不是很高，而且不少手机GPU芯片还在不断增加ALU，那么将采样LUT图的方式转换为纯算术的方式岂不美哉。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="UE4中用球面高斯函数实现移动端SSS效果">
+<meta property="og:url" content="https://cuihongzhi1991.github.io/2020/05/11/sgsss/index.html">
+<meta property="og:site_name" content="Alex Technical Art">
+<meta property="og:description" content="目前一些移动端的皮肤材质采用的是2011年Eric分享的Pre-integrated Skin Shading的精简版，主要是利用$N\cdot L$与模型表面的曲率去采样预计算的LUT图，并将结果作为新的NoL来计算漫反射的颜色。但现在很多3D手游的带宽比较吃紧，而ALU占用率不是很高，而且不少手机GPU芯片还在不断增加ALU，那么将采样LUT图的方式转换为纯算术的方式岂不美哉。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/02.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/06.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/07.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/08.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/09.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/10.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/11.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/12.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/13.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/14.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/15.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/16.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/17.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/18.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/19.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/20.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/21.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/22.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/23.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/24.gif">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/25.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/26.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/27.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/28.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/29.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/30.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/31.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/32.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/33.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/34.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/35.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/36.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/37.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/38.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/39.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/40.png">
+<meta property="article:published_time" content="2020-05-11T06:14:25.000Z">
+<meta property="article:modified_time" content="2020-05-11T23:47:47.226Z">
+<meta property="article:author" content="Alex Tsui">
+<meta property="article:tag" content="球面高斯">
+<meta property="article:tag" content="图形学">
+<meta property="article:tag" content="次表面散射">
+<meta property="article:tag" content="角色">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/02.png">
+
+<link rel="canonical" href="https://cuihongzhi1991.github.io/2020/05/11/sgsss/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>UE4中用球面高斯函数实现移动端SSS效果 | Alex Technical Art</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/blog/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Alex Technical Art</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/blog/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/blog/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">10</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/blog/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">2</span></a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/blog/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">9</span></a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2N1aWhvbmd6aGkxOTkx" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cuihongzhi1991.github.io/2020/05/11/sgsss/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/blog/images/avatar.png">
+      <meta itemprop="name" content="Alex Tsui">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Alex Technical Art">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          UE4中用球面高斯函数实现移动端SSS效果
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-05-11 14:14:25" itemprop="dateCreated datePublished" datetime="2020-05-11T14:14:25+08:00">2020-05-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/blog/categories/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" itemprop="url" rel="index"><span itemprop="name">图形学</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/blog/2020/05/11/sgsss/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/05/11/sgsss/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img src="/blog/2020/05/11/sgsss/02.png" alt><br>目前一些移动端的皮肤材质采用的是2011年Eric分享的Pre-integrated Skin Shading的精简版，主要是利用$N\cdot L$与模型表面的曲率去采样预计算的LUT图，并将结果作为新的NoL来计算漫反射的颜色。但现在很多3D手游的带宽比较吃紧，而ALU占用率不是很高，而且不少手机GPU芯片还在不断增加ALU，那么将采样LUT图的方式转换为纯算术的方式岂不美哉。<br><a id="more"></a></p>
+<h2 id="骑手日记"><a href="#骑手日记" class="headerlink" title="骑手日记"></a>骑手日记</h2><p>五一送外卖的间隙翻到了一篇<span class="exturl" data-url="aHR0cHM6Ly90aGVyZWFsbWpwLmdpdGh1Yi5pby9wb3N0cy9zc3Mtc2cv">博文<i class="fa fa-external-link-alt"></i></span>，原文作者<strong>Matt</strong>是Ready At Down工作室(开发了《教团:1886》)的图形工程师，他简述了一种使用Spherical Gaussian(球面高斯函数，以下简称SG)近似预积分SSS材质的方式。虽然Matt只是抛出一个不完整的思路供大家参考和讨论，但我实际操作后觉得效果还不错。<br><div class="note primary no-icon">
+            <p>优点：</p><ul><li>可以很灵活的制作不同的自定义Diffusion Profile(扩散剖面)，模拟人类皮肤、非人类皮肤或普通的次表面散射皆可；</li><li>不用采样LUT图，节约带宽。</li></ul><p>缺点：</p><ul><li>额外的ALU占用率；</li><li>没有完整的实时SG SSS实现参考。</li></ul>
+          </div><br>下面开始踩坑，错误的地方请各位老板不要给差评，一个差评白跑一天。</p>
+<h2 id="Spherical-Gaussian"><a href="#Spherical-Gaussian" class="headerlink" title="Spherical Gaussian"></a>Spherical Gaussian</h2><h3 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3><p>SG是比较冷门的话题，但Ready At Dawn工作室却对其情有独钟，并使用在自研的游戏引擎中，其效果也经《教团：1886》得到验证：<br><img src="/blog/2020/05/11/sgsss/06.png" alt><br>2016年Matt在个人博客中编写了6篇关于光照贴图烘焙与SG实际应用的<span class="exturl" data-url="aHR0cHM6Ly90aGVyZWFsbWpwLmdpdGh1Yi5pby9wb3N0cy9uZXctYmxvZy1zZXJpZXMtbGlnaHRtYXAtYmFraW5nLWFuZC1zcGhlcmljYWwtZ2F1c3NpYW5zLw==">博文<i class="fa fa-external-link-alt"></i></span>。其中很多算法和实现思路都是参考<strong>龚大(叛逆者)</strong>的<span class="exturl" data-url="aHR0cHM6Ly93d3cubWljcm9zb2Z0LmNvbS9lbi11cy9yZXNlYXJjaC93cC1jb250ZW50L3VwbG9hZHMvMjAwOS8xMi9zZy5wZGY=">论文<i class="fa fa-external-link-alt"></i></span>。我也将重要的前5篇翻译到了自己的<a href="https://cuihongzhi1991.github.io/blog/tags/%E7%90%83%E9%9D%A2%E9%AB%98%E6%96%AF/">博客</a>，感兴趣的老铁可以戳戳。</p>
+<h3 id="什么是SG？"><a href="#什么是SG？" class="headerlink" title="什么是SG？"></a>什么是SG？</h3><p>高斯函数和用于图像处理的二维高斯函数比较常见的，而SG就是三维空间中分布在球面上的高斯函数。<br><img src="/blog/2020/05/11/sgsss/07.png" alt><br>一维的高斯函数的形式是：<br>\begin{align}<br>ae^{\frac{-(x-b)^{2}}{2c^{2}}} \nonumber<br>\end{align}</p>
+<p>(x-b)项使一维高斯函数在笛卡尔坐标系中可以求出给定点到高斯中心的距离。而三维的球面高斯函数参数与一维和二维的不同，需要改变(x-b)项，让高斯函数根据两个标准化的方向向量夹角进行计算使其作用在球面上。用点积的方式就可以实现：<br>\begin{align}<br>G(v;\mu,\lambda,a) = ae^{\lambda(\mu\cdot{v}-1)}\nonumber<br>\end{align}</p>
+<p>和普通高斯函数一样，有一些参数可以控制波瓣的形状和位置。参数\mu是波瓣的轴向或方向，控制波瓣在球面的位置并且指向波瓣的中心；参数\lambda是波瓣的sharpness(锐度)，增加该值时，波瓣会变得更纤细，也就意味着越是远离波瓣轴衰减的越快；参数a是波瓣的振幅或者强度，是波瓣波峰顶部的高度值，可以是标量值，在图形学中也可以是向量，来控制RGB不同颜色通道的变化。在HLSL代码中，只需要球面上一点的标准化方向向量就可以求出该点的球面高斯值。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">SG</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">  float3 Amplitude;  <span class="comment">// float3或者float皆可，按需求设定</span></span><br><span class="line">  float3 Axis;</span><br><span class="line">  <span class="keyword">float</span> Sharpness;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">float3 <span class="title">EvaluateSG</span><span class="params">(in SG sg, in float3 dir)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">float</span> cosAngle = dot(dir, sg.Axis);</span><br><span class="line">  <span class="keyword">return</span> sg.Amplitude * <span class="built_in">exp</span>(sg.Sharpness * (cosAngle - <span class="number">1.0f</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="为何使用SG？"><a href="#为何使用SG？" class="headerlink" title="为何使用SG？"></a>为何使用SG？</h3><p>SG非常直观易于理解，而且很多论文已经探索了SG的使用价值，并使用SG对材质的漫反射和镜面反射实现了预计算的辐射率传递(pre-computed radiance transfer, PRT)。尤其是龚大的《All-Frequency Rendering of Dynamic, Spatially-Varing Reflectance》一文成为RAD工作室使用球面高斯函数的主要参考和灵感。SG有以下几个特点：</p>
+<ol>
+<li><p>两个SG做积运算可以得到另外一个SG；<br>\begin{align}<br>G_1(v)G_2(v) = G(v;\frac{\mu_m}{||\mu_m||},a_1a_2e^{\lambda_m(||\mu_m||-1)}) \nonumber<br>\end{align}</p>
+</li>
+<li><p>计算整个球面的SG积分可以得到SG的总“能量”，对光照计算很有用；<br>\begin{align}<br>\int_{\Omega}G(v)dv = 2\pi\frac{a}{\lambda}(1-e^{-2\lambda}) \nonumber<br>\end{align}</p>
+</li>
+<li><p>两个SG也可以做点积运算，求出两个SG乘积的积分。<br>\begin{align}<br>\int_{\Omega}G_1(v)G_2(v)dv = 2\pi{a_0}{a_1}\frac{e^{||\mu_m||-\lambda_m}-e^{-||\mu_m||-\lambda_m}}{||\mu_m||} \nonumber<br>\end{align}</p>
+</li>
+</ol>
+<p>使用SG近似漫反射光照和镜面光照的详细内容可以看Matt的原文或者戳我的博客。</p>
+<h3 id="与SSS何干？"><a href="#与SSS何干？" class="headerlink" title="与SSS何干？"></a>与SSS何干？</h3><div class="note warning no-icon">
+            <ol><li>SG可以朝向任意方向，也就是\mu表示的波瓣轴向。这样就可以与场景中的punctual light(精确光源)完美对齐。</li><li>SG的\lambda(锐度)参数可以是任意数值，这样可以表示不同的滤波参数，包括很窄的滤波核。</li><li>SG很好做归一化(球面的SG积分为1)，可以保证能量守恒。</li><li>两个SG相乘可以得到另一个SG，意味着可以用一个SG作为滤波核，与代表光源的SG进行相乘得到另一个SG，这个SG则代表预积分的光照信息。</li><li>SG已经有比较好的近似漫反射光照的方式。(<a href="https://cuihongzhi1991.github.io/blog/2020/05/03/sg03/">SG系列第三篇</a>)</li></ol>
+          </div>
+<p>Matt给出了下方的代码：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">float3 diffuse = nDotL;</span><br><span class="line"><span class="keyword">if</span>(EnableSSS)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// Represent the diffusion profiles as spherical gaussians</span></span><br><span class="line">    SG redKernel = MakeNormalizedSG(lightDir, <span class="number">1.0f</span> / max(ScatterAmt.x, <span class="number">0.0001f</span>));</span><br><span class="line">    SG greenKernel = MakeNormalizedSG(lightDir, <span class="number">1.0f</span> / max(ScatterAmt.y, <span class="number">0.0001f</span>));</span><br><span class="line">    SG blueKernel = MakeNormalizedSG(lightDir, <span class="number">1.0f</span> / max(ScatterAmt.z, <span class="number">0.0001f</span>));</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Compute the irradiance that would result from convolving a punctual light source</span></span><br><span class="line">    <span class="comment">// with the SG filtering kernels</span></span><br><span class="line">    diffuse = float3(SGIrradianceFitted(redKernel, normal).x,</span><br><span class="line">                    	    SGIrradianceFitted(greenKernel, normal).x,</span><br><span class="line">                            SGIrradianceFitted(blueKernel, normal).x);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">float3 lightingResponse = diffuse * LightIntensity * DiffuseAlbedo * InvPi;</span><br></pre></td></tr></table></figure></p>
+<p>思路是根据光源朝向和红、绿、蓝三种不同的散射强度创建三个SG核，这三个SG滤波核其实就是模拟红绿蓝三种波长的Diffusion Profile。结合2011年Eric的预积分皮肤PPT来看，根据剖面图可以看出红光比绿光和蓝光散射的更远，因此会出现白色——黄色——橙色——红色——黑色的渐变效果。<br><img src="/blog/2020/05/11/sgsss/08.png" alt></p>
+<p>因此可以用一个float3 ScatterAmt表示散射强度， x分量表示红光，依此类推。而构建SG时，\lambda参数表示锐度，\lambda数值越大表示越细长。因此红光的\lambda值最小，那么可以简单的用$\frac{1}{ScatterAmt.x}$来表示红光，依此类推。<br>按照Matt原文的描述，首先是归一化的SG核，然后代表轴向的$\mu$与光源对齐，代表振幅的与<br>光源强度(也可认为是LightColor)相乘。可以推出下面的代码：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// SG Kernel</span></span><br><span class="line"><span class="function">FSphericalGaussian <span class="title">MakeNormalizedSG</span><span class="params">(float3 LightDir, half Sharpness, half3 LightIntensity)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 归一化的SG</span></span><br><span class="line">    SphericalGaussian SG;</span><br><span class="line">    SG.Axis = float3(<span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>); <span class="comment">// 任意方向</span></span><br><span class="line">    SG.Sharpness = Sharpness; <span class="comment">// (1 / ScatterAmt.element)</span></span><br><span class="line">    SG.Amplitude = SG.Sharpness / ((<span class="number">2</span> * PI) - (<span class="number">2</span> * PI) * <span class="built_in">exp</span>(<span class="number">-2</span> * SG.Sharpness)); <span class="comment">// 归一化处理</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 对齐轴向，乘上光源强度(颜色)</span></span><br><span class="line">    SG.Axis = LightDir;</span><br><span class="line">    SG.Amplitude *= LightIntensity;</span><br><span class="line">    <span class="keyword">return</span> SG;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>因此虽然此函数的名字叫MakeNormalizedSG，但其整个球面积分值已经是乘过光源强度的了，不一定是1。当时我认为Matt可能这里有错误，但我还是too yound, too cai了。因为他后面使用了函数SGIrradianceFitted()来近似渲染方程中的$L_i$与cosine项点积的积分，但这个函数是Stephen Hill提出并且针对归一化SG的，Amplitude项并不会参与计算。所以Matt才在最后一行把光源强度加入计算。破案了，MMP坑了我有一会儿，让我有种文章描述前后矛盾的错觉。SGIrradianceFitted()函数在SG系列的第三篇有写到。是一种比较精确的逼近光源SG与余弦波点积做积分的方式。另外两种较粗糙的近似方式可以看那篇文章。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">float3 <span class="title">SGIrradianceFitted</span><span class="params">(in SG lightingLobe, in float3 normal)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">float</span> muDotN = dot(lightingLobe.Axis, normal);</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">float</span> lambda = lightingLobe.Sharpness;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">float</span> c0 = <span class="number">0.36f</span>;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">float</span> c1 = <span class="number">1.0f</span> / (<span class="number">4.0f</span> * c0);</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">float</span> eml  = <span class="built_in">exp</span>(-lambda);</span><br><span class="line">    <span class="keyword">float</span> em2l = eml * eml;</span><br><span class="line">    <span class="keyword">float</span> rl   = rcp(lambda);</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">float</span> scale = <span class="number">1.0f</span> + <span class="number">2.0f</span> * em2l - rl;</span><br><span class="line">    <span class="keyword">float</span> bias  = (eml - em2l) * rl - em2l;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">float</span> x  = <span class="built_in">sqrt</span>(<span class="number">1.0f</span> - scale);</span><br><span class="line">    <span class="keyword">float</span> x0 = c0 * muDotN;</span><br><span class="line">    <span class="keyword">float</span> x1 = c1 * x;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">float</span> n = x0 + x1;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">float</span> y = saturate(muDotN);</span><br><span class="line">    <span class="keyword">if</span>(<span class="built_in">abs</span>(x0) &lt;= x1)</span><br><span class="line">        y = n * n / x;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">float</span> result = scale * y + bias;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>好的gays，理论暂时告一段落，整活。</p>
+<h2 id="UE4中实现移动端的SGSSS"><a href="#UE4中实现移动端的SGSSS" class="headerlink" title="UE4中实现移动端的SGSSS"></a>UE4中实现移动端的SGSSS</h2><h3 id="添加着色模型"><a href="#添加着色模型" class="headerlink" title="添加着色模型"></a>添加着色模型</h3><p>为延迟渲染添加着色模型的流程我照着外网学习了一波并记录在<a href="https://cuihongzhi1991.github.io/blog/2020/04/25/ue4addshadingmodel/">博客中</a>。这次是针对移动端添加新的着色模型，相比为延迟渲染管线需要修改的地方比较少。首先打开你辛辛苦苦下载的UE4.24源码，在EngineTypes.h中为EMaterialShadingModel添加枚举成员，DisplayName材质编辑器UI中的名称。<br><img src="/blog/2020/05/11/sgsss/09.png" alt></p>
+<p>然后在MaterialShader.cpp中添加着色模型的名称，该名称是在源码内使用的(非UI)：<br><img src="/blog/2020/05/11/sgsss/10.png" alt></p>
+<p>然后修改HLSLMaterialTranslator.h，编译着色器时为SGSSS添加类型描述宏：<br><img src="/blog/2020/05/11/sgsss/11.png" alt></p>
+<p>我们将会需要两个材质引脚——Scatter Amount(三维向量)和Curvature(标量，后面会用到)。为了不影响其他引脚的正常使用，我们选择Subsurface和Custom0引脚作为这两个参数的输入接口。在Material.cpp中做修改：<br><img src="/blog/2020/05/11/sgsss/12.png" alt></p>
+<p>然后在MaterialGraph.cpp中修改引脚的名字，更加直观清晰：<br><img src="/blog/2020/05/11/sgsss/13.png" alt></p>
+<p>一切搞定， 了吗？并没有。UE4在编译着色器时会检查冗余和不支持的内容然后丢弃掉或者使用默认值替代。在HLSLMaterialTranslator.h中有这么一段代码：<br><img src="/blog/2020/05/11/sgsss/14.png" alt></p>
+<p>会通过IsSubsurfaceShadingModel()函数来检查你选择的着色模型是否属于Subsurface类，不是的话就不会编译该引脚的输入，那不是白搞事了？所以打开MaterialShared.h，为Subsurface类添加SGSSS：<br><img src="/blog/2020/05/11/sgsss/15.png" alt></p>
+<p>这是耽误我送外卖的坑点之一。老板们，C++源码部分修改已经完事儿，编译走起来。</p>
+<h3 id="编写着色器"><a href="#编写着色器" class="headerlink" title="编写着色器"></a>编写着色器</h3><p>与延迟渲染管线比，移动端几乎不用修改.ush和.usf就可以取到值，当然这和GBuffer存储数据和提取数据有关。在开始编写代码前，建议开启着色器开发模型，可以自动报错方便调试。位置\Engine\Config\ConsoleVariables.ini。<br><img src="/blog/2020/05/11/sgsss/16.png" alt></p>
+<p>首先添加一些与SG有关的函数，然而巧的是UE4已经使用龚大的SG算法来计算Bent Normal了，所以有些函数直接用就可以了。在SphericalGaussian.ush文件中，struct FSpherical Gaussian{}是SG的结构体，其中的Axis, Sharpness和Amplitude分别对应的是$ \mu, \lambda和a$;DotCosineLobe()其实就是Stephen Hill提出的SGIrradianceFitted()。<br><img src="/blog/2020/05/11/sgsss/17.png" alt><img src="/blog/2020/05/11/sgsss/18.png" alt></p>
+<p>下面添加一个MakeNormalizedSG()函数创建归一化的SG，并且轴向为光源方向，锐度是$\frac{1}{ScatterAmt.element}$：<br><img src="/blog/2020/05/11/sgsss/19.png" alt></p>
+<p>然后添加计算光照项与Cosine项的函数SGDiffuseLighting()<br><img src="/blog/2020/05/11/sgsss/20.png" alt></p>
+<p>为了方便测试效果，下面先针对平行光的交互添加代码。在MobileBasePassPixelShader.usf添加头文件：<br><img src="/blog/2020/05/11/sgsss/21.png" alt></p>
+<p>然后在平行光的渲染部分修改代码，可以看到实现方式类似预积分皮肤的方式，将SG结果作为新的NoL参与计算。<br><img src="/blog/2020/05/11/sgsss/22.png" alt></p>
+<p>保存.usf文件后，万万不可在UE4工程中按ctrl + shift + .编译所有材质，那成千上万个需要编译的着色器分分钟让你被黑人抬棺。有很多控制台命令可以指定编译路径、文件或材质。我最常用的是recompileshaders material “Material Name”，比如我们创建个材质M_SGSSS，那么后面调试代码的时候每次只需要控制台输入recompileshaders material M_SGSSS即可，只编译此材质就会让黑人抬棺失败。<br><img src="/blog/2020/05/11/sgsss/23.png" alt></p>
+<p>创建好材质之后，可以调节参数看效果。是不是有预积分内味儿了？<br><img src="/blog/2020/05/11/sgsss/24.gif" alt></p>
+<p>这个算法目前的瑕疵Eric也提到过，不使用filmic tone mapper的话会看到三色光扩散的范围很明显，用在皮肤上会看到蓝色分离的较明显，我们加上tone mapper对比一下，对比非常明显，经过tone mapping后的非常接近预积分色彩范围(暂时不考虑曲率)。<br><img src="/blog/2020/05/11/sgsss/25.png" alt><img src="/blog/2020/05/11/sgsss/26.png" alt></p>
+<p>因为SG制作Diffusion Profile的自由度很高，可以制作各种SSS效果。<br><img src="/blog/2020/05/11/sgsss/27.png" alt></p>
+<p>如果把同样的算法在点光源和聚光灯的部分实现，然后把一个点光源放到模型里面，效果也很不错。<br><img src="/blog/2020/05/11/sgsss/28.png" alt></p>
+<h3 id="加入曲率"><a href="#加入曲率" class="headerlink" title="加入曲率"></a>加入曲率</h3><p>预积分LUT的U方向采样利用的是NoL，我们已经实现了类似的效果。V向采样利用的是曲率。如果不追求较真实合理的效果，不做这一步也是可以的，会得到下面的效果。曲率高的鼻子和眼睛与曲率低的头顶的扩散剖面没区别。<br><img src="/blog/2020/05/11/sgsss/29.png" alt></p>
+<p>那么按照Eric的方法求出曲率$\frac{1}{r}$：<br><img src="/blog/2020/05/11/sgsss/30.png" alt><img src="/blog/2020/05/11/sgsss/31.png" alt></p>
+<p>如果敢用这种计算出来的曲率绝对被主美打死。<br><img src="/blog/2020/05/11/sgsss/32.png" alt></p>
+<p>那还是制作一张柔和过度的曲率图吧。如果使用Substance烘焙曲率贴图会发现可调的参数非常少，而且凹面的曲率是0，在鼻翼两侧、下巴、眼窝以及耳朵内部都会变成黑色，结果不正确(也可能我的substance是渣渣)。<br><img src="/blog/2020/05/11/sgsss/33.png" alt></p>
+<p>于是使用Houdini，好处就是可以先将低面数模型细分一下，然后计算曲率。注意不要用官方提供的Labs中的烘焙贴图工具，那个问题很多且结果不准确。计算后的结果是作为顶点的Cd属性，可以给一个principle shader以顶点色作为base color，最后用bake texture输出出来。对比一下实时计算的效果完胜，缺点是占用带宽，且每个模型都要制作一张图。<br><img src="/blog/2020/05/11/sgsss/34.png" alt> <img src="/blog/2020/05/11/sgsss/35.png" alt></p>
+<p>曲率越大扩散越强，那么可以尝试将Curvature与ScatterAmt相乘得到新的ScattrerAmt。并且可以在材质中对曲率贴图进行简单的对比度或强度等等方面的操作，这样更加灵活和自由。并且反复调试后我觉得还是不加tone mapper柔和含蓄一点。<br><img src="/blog/2020/05/11/sgsss/36.png" alt> <img src="/blog/2020/05/11/sgsss/37.png" alt> <img src="/blog/2020/05/11/sgsss/38.png" alt> <img src="/blog/2020/05/11/sgsss/39.png" alt><img src="/blog/2020/05/11/sgsss/40.png" alt></p>
+<p>又有客户催单了，各位老板慢用，告辞。</p>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>总要恰饭的嘛</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/blog/images/wechatpay.png" alt="Alex Tsui 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/blog/images/alipay.jpg" alt="Alex Tsui 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/blog/tags/%E7%90%83%E9%9D%A2%E9%AB%98%E6%96%AF/" rel="tag"><i class="fa fa-tag"></i> 球面高斯</a>
+              <a href="/blog/tags/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" rel="tag"><i class="fa fa-tag"></i> 图形学</a>
+              <a href="/blog/tags/%E6%AC%A1%E8%A1%A8%E9%9D%A2%E6%95%A3%E5%B0%84/" rel="tag"><i class="fa fa-tag"></i> 次表面散射</a>
+              <a href="/blog/tags/%E8%A7%92%E8%89%B2/" rel="tag"><i class="fa fa-tag"></i> 角色</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/blog/2020/05/05/sg05/" rel="prev" title="球面高斯函数05——用球面高斯函数近似辐射率和辐射度">
+      <i class="fa fa-chevron-left"></i> 球面高斯函数05——用球面高斯函数近似辐射率和辐射度
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#骑手日记"><span class="nav-number">1.</span> <span class="nav-text">骑手日记</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Spherical-Gaussian"><span class="nav-number">2.</span> <span class="nav-text">Spherical Gaussian</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#参考资料"><span class="nav-number">2.1.</span> <span class="nav-text">参考资料</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#什么是SG？"><span class="nav-number">2.2.</span> <span class="nav-text">什么是SG？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为何使用SG？"><span class="nav-number">2.3.</span> <span class="nav-text">为何使用SG？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#与SSS何干？"><span class="nav-number">2.4.</span> <span class="nav-text">与SSS何干？</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#UE4中实现移动端的SGSSS"><span class="nav-number">3.</span> <span class="nav-text">UE4中实现移动端的SGSSS</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#添加着色模型"><span class="nav-number">3.1.</span> <span class="nav-text">添加着色模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#编写着色器"><span class="nav-number">3.2.</span> <span class="nav-text">编写着色器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#加入曲率"><span class="nav-number">3.3.</span> <span class="nav-text">加入曲率</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Alex Tsui"
+      src="/blog/images/avatar.png">
+  <p class="site-author-name" itemprop="name">Alex Tsui</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/blog/archives/">
+        
+          <span class="site-state-item-count">10</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/blog/categories/">
+          
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/blog/tags/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2N1aWhvbmd6aGkxOTkx" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;cuihongzhi1991"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS9BbGV4VHN1aUNO" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;AlexTsuiCN"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+      <!--tag cloud-->
+      
+      <script type="text/javascript" charset="utf-8" src="/blog/js/tagcloud.js"></script>
+      <script type="text/javascript" charset="utf-8" src="/blog/js/tagcanvas.js"></script>
+        <div class="widget-wrap">
+          <h3 class="widget-title">Tag Cloud</h3>
+          <div id="myCanvasContainer" class="widget tagcloud">
+            <canvas width="250" height="250" id="resCanvas" style="width:100%">
+              <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/UE4/" rel="tag">UE4</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%85%89%E7%85%A7%E8%B4%B4%E5%9B%BE/" rel="tag">光照贴图</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%8D%A1%E9%80%9A%E7%9D%80%E8%89%B2/" rel="tag">卡通着色</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" rel="tag">图形学</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%9D%90%E8%B4%A8/" rel="tag">材质</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%AC%A1%E8%A1%A8%E9%9D%A2%E6%95%A3%E5%B0%84/" rel="tag">次表面散射</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%B8%B2%E6%9F%93%E7%AE%A1%E7%BA%BF/" rel="tag">渲染管线</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E7%90%83%E9%9D%A2%E9%AB%98%E6%96%AF/" rel="tag">球面高斯</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E8%A7%92%E8%89%B2/" rel="tag">角色</a><span class="tag-list-count">1</span></li></ul>
+            </canvas>
+          </div>
+        </div>
+      
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Alex Tsui</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/blog/lib/anime.min.js"></script>
+  <script src="/blog/lib/velocity/velocity.min.js"></script>
+  <script src="/blog/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/blog/js/utils.js"></script>
+
+<script src="/blog/js/motion.js"></script>
+
+
+<script src="/blog/js/schemes/pisces.js"></script>
+
+
+<script src="/blog/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://alextsui.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://cuihongzhi1991.github.io/2020/05/11/sgsss/";
+    this.page.identifier = "2020/05/11/sgsss/";
+    this.page.title = "UE4中用球面高斯函数实现移动端SSS效果";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://alextsui.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+
+</body>
+</html>
