@@ -64,8 +64,9 @@
 <meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/38.png">
 <meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/39.png">
 <meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/40.png">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/05/11/sgsss/05.png">
 <meta property="article:published_time" content="2020-05-11T06:14:25.000Z">
-<meta property="article:modified_time" content="2020-05-11T23:47:47.226Z">
+<meta property="article:modified_time" content="2020-05-11T23:53:37.620Z">
 <meta property="article:author" content="Alex Tsui">
 <meta property="article:tag" content="球面高斯">
 <meta property="article:tag" content="图形学">
@@ -310,7 +311,7 @@
 <p>如果敢用这种计算出来的曲率绝对被主美打死。<br><img src="/blog/2020/05/11/sgsss/32.png" alt></p>
 <p>那还是制作一张柔和过度的曲率图吧。如果使用Substance烘焙曲率贴图会发现可调的参数非常少，而且凹面的曲率是0，在鼻翼两侧、下巴、眼窝以及耳朵内部都会变成黑色，结果不正确(也可能我的substance是渣渣)。<br><img src="/blog/2020/05/11/sgsss/33.png" alt></p>
 <p>于是使用Houdini，好处就是可以先将低面数模型细分一下，然后计算曲率。注意不要用官方提供的Labs中的烘焙贴图工具，那个问题很多且结果不准确。计算后的结果是作为顶点的Cd属性，可以给一个principle shader以顶点色作为base color，最后用bake texture输出出来。对比一下实时计算的效果完胜，缺点是占用带宽，且每个模型都要制作一张图。<br><img src="/blog/2020/05/11/sgsss/34.png" alt> <img src="/blog/2020/05/11/sgsss/35.png" alt></p>
-<p>曲率越大扩散越强，那么可以尝试将Curvature与ScatterAmt相乘得到新的ScattrerAmt。并且可以在材质中对曲率贴图进行简单的对比度或强度等等方面的操作，这样更加灵活和自由。并且反复调试后我觉得还是不加tone mapper柔和含蓄一点。<br><img src="/blog/2020/05/11/sgsss/36.png" alt> <img src="/blog/2020/05/11/sgsss/37.png" alt> <img src="/blog/2020/05/11/sgsss/38.png" alt> <img src="/blog/2020/05/11/sgsss/39.png" alt><img src="/blog/2020/05/11/sgsss/40.png" alt></p>
+<p>曲率越大扩散越强，那么可以尝试将Curvature与ScatterAmt相乘得到新的ScattrerAmt。并且可以在材质中对曲率贴图进行简单的对比度或强度等等方面的操作，这样更加灵活和自由。并且反复调试后我觉得还是不加tone mapper柔和含蓄一点。<br><img src="/blog/2020/05/11/sgsss/36.png" alt> <img src="/blog/2020/05/11/sgsss/37.png" alt> <img src="/blog/2020/05/11/sgsss/38.png" alt> <img src="/blog/2020/05/11/sgsss/39.png" alt><img src="/blog/2020/05/11/sgsss/40.png" alt><img src="/blog/2020/05/11/sgsss/05.png" alt></p>
 <p>又有客户催单了，各位老板慢用，告辞。</p>
 
     </div>
