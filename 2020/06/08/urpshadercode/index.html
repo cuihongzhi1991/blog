@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/blog/images/apple-touch-icon-alex.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/blog/images/favicon-32x32-alex.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/blog/images/favicon-16x16-alex.png">
+  <link rel="mask-icon" href="/blog/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="MtLzwmTs3a2ZnDBFhocKgVUp2SOlNOwwXgBdgGt482I">
+
+<link rel="stylesheet" href="/blog/css/main.css">
+
+
+<link rel="stylesheet" href="/blog/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"cuihongzhi1991.github.io","root":"/blog/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"disqus","storage":true,"lazyload":false,"nav":null,"activeClass":"disqus"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="本篇文章转自CYAN编写的《Writing Shader Code for the Universal RP》，文中以一个完整的PBR Shader为案例讲解了URP管线的一些机制以及编写Shader时的注意事项。可以帮助我们少踩一些坑。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="编写URP着色器">
+<meta property="og:url" content="https://cuihongzhi1991.github.io/2020/06/08/urpshadercode/index.html">
+<meta property="og:site_name" content="Alex Technical Art">
+<meta property="og:description" content="本篇文章转自CYAN编写的《Writing Shader Code for the Universal RP》，文中以一个完整的PBR Shader为案例讲解了URP管线的一些机制以及编写Shader时的注意事项。可以帮助我们少踩一些坑。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cuihongzhi1991.github.io/blog/2020/06/08/urpshadercode/01.png">
+<meta property="article:published_time" content="2020-06-08T13:06:48.000Z">
+<meta property="article:modified_time" content="2020-06-21T07:27:11.690Z">
+<meta property="article:author" content="Alex Tsui">
+<meta property="article:tag" content="Unity">
+<meta property="article:tag" content="URP">
+<meta property="article:tag" content="材质">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cuihongzhi1991.github.io/blog/2020/06/08/urpshadercode/01.png">
+
+<link rel="canonical" href="https://cuihongzhi1991.github.io/2020/06/08/urpshadercode/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>编写URP着色器 | Alex Technical Art</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <!-- hexo-inject:begin --><!-- hexo-inject:end --><div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/blog/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Alex Technical Art</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/blog/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/blog/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">13</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/blog/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/blog/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">13</span></a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2N1aWhvbmd6aGkxOTkx" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cuihongzhi1991.github.io/2020/06/08/urpshadercode/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/blog/images/avatar.png">
+      <meta itemprop="name" content="Alex Tsui">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Alex Technical Art">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          编写URP着色器
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-06-08 21:06:48" itemprop="dateCreated datePublished" datetime="2020-06-08T21:06:48+08:00">2020-06-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/blog/categories/Unity/" itemprop="url" rel="index"><span itemprop="name">Unity</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/blog/2020/06/08/urpshadercode/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/06/08/urpshadercode/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>本篇文章转自CYAN编写的<span class="exturl" data-url="aHR0cHM6Ly9jeWFuZ2FtZWRldi53b3JkcHJlc3MuY29tLzIwMjAvMDYvMDUvdXJwLXNoYWRlci1jb2RlLw==">《Writing Shader Code for the Universal RP》<i class="fa fa-external-link-alt"></i></span>，文中以一个完整的PBR Shader为案例讲解了URP管线的一些机制以及编写Shader时的注意事项。可以帮助我们少踩一些坑。<br><a id="more"></a></p>
+<h2 id="Shaderlab"><a href="#Shaderlab" class="headerlink" title="Shaderlab"></a>Shaderlab</h2><p>Unity中的着色器文件中，使用Shaderlab语义来定义着色器的<font color="DarkTurquoise">Properties</font>、<font color="DarkTurquoise">SubShader</font>以及<font color="DarkTurquoise">Pass</font>，Pass中实际的着色器代码使用HLSL编写。<br>Shaderlab中的大多数内容相比过去的内置管线并没有改变太多，所以作者会以一个案例来拆解分析，而不会涉及太多细节的东西，可以通过官方文档查看更详细的内容。URP管线下需要注意的区别是<font color="DarkTurquoise">“RenderPipeline”</font>和<font color="DarkTurquoise">“LightMode”</font>的标签。<br>着色器块如下方的形式：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Shader <span class="string">"Custom/UnlitShaderExample"</span></span><br><span class="line">&#123;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在其内部，我们需要一个Properties语义块和SubShader语义块(其中含有Pass语义块)：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Properties</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// [参数名] ("[材质面板上的名称]", [类型]) = [默认值]</span></span><br><span class="line">    _BaseMap (<span class="string">"Base Texture"</span>, <span class="number">2</span>D) = <span class="string">"white"</span> &#123;&#125;</span><br><span class="line">    _BaseColor (<span class="string">"Base Color"</span>, Color) = (<span class="number">0</span>, <span class="number">0.66</span>, <span class="number">0.73</span>, <span class="number">1</span>)</span><br><span class="line">    <span class="comment">// _ExampleDir ("Example Vector", Vector) = (0, 1, 0, 0)</span></span><br><span class="line">    <span class="comment">// _ExampleFloat ("Example Float(Vector1)", Float) = 0.5</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>“<font color="DarkTurquoise">Properties</font>”语义块是用来暴露需要显示在材质面板上的参数，这样同着色器生成的不同材质可以使用不同的贴图或颜色等等。</p>
+<p>如果打算使用C#脚本来修改材质中的属性(如<font color="DarkTurquoise">material.SetColor/SetFloat/SetVector</font>等)，则不需要在Properties语义块中定义。然而如果需要每个物体拒用不同的参数值，则需要在Properties中定义，否则SRP Batcher试图使用未暴露的参数对对象进行批处理时会出现渲染BUG。如果不是每个对象使用不同的参数值，那么使用<font color="DarkTurquoise">Shader.SetGlobalColor/Float/Vector</font>则更加方便。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">SubShader</span><br><span class="line">&#123;</span><br><span class="line">    Tags &#123; </span><br><span class="line">        <span class="string">"RenderType"</span> = <span class="string">"Opaque"</span> </span><br><span class="line">        <span class="string">"Queue"</span> = <span class="string">"Geometry"</span> </span><br><span class="line">        <span class="string">"RenderPipeline"</span> = <span class="string">"UniversalRenderPipeline"</span> &#125;</span><br><span class="line"></span><br><span class="line">    HLSLINCLUDE</span><br><span class="line">    ...</span><br><span class="line">    ENDHLSL</span><br><span class="line"></span><br><span class="line">    Pass</span><br><span class="line">    &#123;</span><br><span class="line">        Name <span class="string">"ExamplePass"</span></span><br><span class="line">        Tags &#123; <span class="string">"LightMode"</span> = <span class="string">"UniversalForward"</span> &#125;</span><br><span class="line"></span><br><span class="line">        HLSLPROGRAM</span><br><span class="line">        ...</span><br><span class="line">        ENDHLSL</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Unity会使用当前设备GPU支持的第一个SubShader语义块的内容，由于我们的标签设置为<font color="DarkTurquoise">“RenderPipeline” = “UniversalRenderPipeline”</font>，所以在内置管线和HDRP管线下不会执行此SubShader，而会尝试着色器中余下的SubShader。如果没有可支持的SubShader，那么则会显示为品红色的错误提示着色器。<br>“<font color="DarkTurquoise">RenderType</font>”标签在内置管线中实现Replacement Shader(URP不支持)时可以使用到。“<font color="DarkTurquoise">Queue</font>”标签指定物体渲染的顺序，可以用来指定半透材质物体的排序或用于模板(Stencil)相关的操作。可以在<span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnVuaXR5M2QuY29tL01hbnVhbC9TTC1TdWJTaGFkZXJUYWdzLmh0bWw=">此处<i class="fa fa-external-link-alt"></i></span>查看这些标签的信息。<br>可以在SubShader中定义多个<font color="DarkTurquoise">Pass</font>语义块，但是<font color="DarkTurquoise">每个Pass的”LightMode”标签必须指定特定的类型。URP使用single-pass的前向渲染方式，只有第一个标签为”UniversalForward”的Pass(当前GPU支持的)会用被来渲染物体，所以不能渲染多个同类型标签的Pass。</font>如果使用无标签的Pass，会破坏SRP Batcher的批处理。所以建议分开使用着色器或材质，用于不同的MeshRenderers或在前向渲染器中使用RenderObjects特性在特定的层使用一个overrideMaterial重新绘制物体。</p>
+<div class="note warning no-icon">
+            <p><strong>URP LightMode 标签：</strong></p><ul><li>UniversalForward - 使用前向渲染器渲染物体</li><li>ShadowCaster - 用于投射阴影</li><li>DepthOnly - 用于渲染场景的深度纹理，一些渲染特性可能会用到</li><li>Meta - 仅在烘焙光照贴图时使用</li><li>Universal2D - 开启2D渲染器时使用</li><li>UniversalGBuffer - 与延迟渲染有关，目前还在开发和测试中</li></ul>
+          </div>
+<p>Pass中还有一个”Name”，可以配合<font color="DarkTurquoise">UsePass</font>命令使用。其他着色器中存在一个你想使用的Pass时，使用这个方法就不需要再重复编写一次了。例如：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">UsePass <span class="string">"Custom/UnlitShaderExample/EXAMPLEPASS"</span></span><br></pre></td></tr></table></figure>
+<p>这个Pass就会被包含在你的着色器中。但是为了与SRP Batcher兼容，所有的pass都要共享相同的UnityPerMaterial CBUFFER，使用UsePass时如果CBUFFER数据不同则会出现问题(未来可能会修复)。下一小节会介绍CBUFFER。<br>在Pass语义块中，也会常常看到<font color="DarkTurquoise">Cull, ZWrite和ZTest</font>。它们的默认值分别是Cull Back, ZWrite On和ZTest LEqual。半透队列中的着色器，还可以使用Blend(混合)操作。模板(Stencil)操作也可以在Pass语义块中定义。<br>完整的Shaderlab语义块如下：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">Shader <span class="string">"Custom/UnlitShaderExample"</span> &#123;</span><br><span class="line">    Properties </span><br><span class="line">    &#123;</span><br><span class="line">        _BaseMap (<span class="string">"Example Texture"</span>, <span class="number">2</span>D) = <span class="string">"white"</span> &#123;&#125;</span><br><span class="line">        _BaseColor (<span class="string">"Example Colour"</span>, Color) = (<span class="number">0</span>, <span class="number">0.66</span>, <span class="number">0.73</span>, <span class="number">1</span>)</span><br><span class="line">        <span class="comment">//_ExampleDir ("Example Vector", Vector) = (0, 1, 0, 0)</span></span><br><span class="line">        <span class="comment">//_ExampleFloat ("Example Float (Vector1)", Float) = 0.5</span></span><br><span class="line">    &#125;</span><br><span class="line">    SubShader </span><br><span class="line">    &#123; </span><br><span class="line">        Tags &#123; </span><br><span class="line">        <span class="string">"RenderType"</span>=<span class="string">"Opaque"</span></span><br><span class="line">        <span class="string">"Queue"</span>=<span class="string">"Geometry"</span></span><br><span class="line">        <span class="string">"RenderPipeline"</span>=<span class="string">"UniversalRenderPipeline"</span> &#125;</span><br><span class="line">         </span><br><span class="line">        HLSLINCLUDE</span><br><span class="line">        ...</span><br><span class="line">        ENDHLSL</span><br><span class="line">         </span><br><span class="line">        Pass </span><br><span class="line">        &#123;</span><br><span class="line">            Name <span class="string">"Example"</span></span><br><span class="line">            Tags &#123; <span class="string">"LightMode"</span>=<span class="string">"UniversalForward"</span> &#125;</span><br><span class="line">             </span><br><span class="line">            HLSLPROGRAM</span><br><span class="line">            ...</span><br><span class="line">            ENDHLSL</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="HLSL"><a href="#HLSL" class="headerlink" title="HLSL"></a>HLSL</h2><p>实际的着色器代码是在ShaderLab的各个Pass中使用HLSL(high level shading language)编写的。<br>内置管线的着色器基本都是使用CG语言编写的，但未来版本推荐使用HLSL，并且HDRP和URP管线的着色器都是基于HLSL的，可见未来将弃用CG语言。<font color="DarkTurquoise">曾经使用的CGPROGRAM/CGINCLUDE和ENDCG在URP的着色器中要替换为HLSLPROGRAM/HLSLINCLUDE和ENDHLSL。因为CGPROGRAM等标签会自动包含一些内置的函数，会与URP中的一些函数产生重复定义的冲突。</font></p>
+<h3 id="标量类型变量"><a href="#标量类型变量" class="headerlink" title="标量类型变量"></a>标量类型变量</h3><p>HLSL中通常包含下述标量数据类型：</p>
+<ul>
+<li>bool——true或false。</li>
+<li>float——32位浮点数。一般用于表示世界空间坐标和纹理坐标的单个元素的值；或者用于复杂的标量计算，如三角函数、幂函数和指数函数运算。</li>
+<li>half——16位浮点数，一般用于表示较短的向量、方向、模型空间坐标和颜色的单个元素的值。</li>
+<li>double——64位浮点数，不能用于输入或输出。</li>
+<li>fixed——只在内置管线着色器中使用，URP不支持，使用half代替。</li>
+<li>real——默认为half，如果定义了“#define PREFER_HALF 0”，那么则为float。</li>
+<li>int——32位整数</li>
+<li>uint——32位无符号整数(GLES2不支持。自动转为int类型)</li>
+</ul>
+<h3 id="向量类型变量"><a href="#向量类型变量" class="headerlink" title="向量类型变量"></a>向量类型变量</h3><ul>
+<li>float2/3/4——每个元素都为float类型的二维/三维/四维向量。</li>
+<li>half2/3/4——每个元素都为half类型的二维/三维/四维向量。</li>
+<li>int2/3/4——每个元素都为int类型的二维/三维/四维向量。</li>
+</ul>
+<p>可以使用.x/.y/.z/.w(或者.r/.g/.b/.a)获取向量的各个元素。并且也可以利用这种写法重新排布向量的构成。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">float3 <span class="built_in">vector</span> = float3(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line">float3 a = <span class="built_in">vector</span>.xyz;  <span class="comment">// (1, 2, 3), 即vector.rgb</span></span><br><span class="line">float3 b = vector3.zyx; <span class="comment">// (3, 2, 1), 即vector.bgr</span></span><br><span class="line">float3 c = <span class="built_in">vector</span>.xxx;  <span class="comment">// (1, 1, 1), 即vector.rrr</span></span><br><span class="line">float2 d = <span class="built_in">vector</span>.zy;   <span class="comment">// (3, 2), 即vector.bg</span></span><br><span class="line">float4 e = <span class="built_in">vector</span>.xxzz; <span class="comment">// (1, 1, 3, 3), 即vector.rrbb</span></span><br><span class="line"><span class="keyword">float</span> f = <span class="built_in">vector</span>.y;     <span class="comment">// 2, 即vector.g</span></span><br><span class="line"> </span><br><span class="line"><span class="comment">// 但是杂交的表示法如"vector.rx"是不允许的。</span></span><br><span class="line"><span class="comment">// 使用vector.rr或vector.xx代替。</span></span><br></pre></td></tr></table></figure>
+<h3 id="矩阵"><a href="#矩阵" class="headerlink" title="矩阵"></a>矩阵</h3><p>矩阵可以用标量类型接数字X数字的形式表示，如float4x3。第一个数字4为矩阵的行数(row)，第二个数字3为矩阵的列数(column)。</p>
+<ul>
+<li>float4x4——4 rows, 4 columns</li>
+<li>int4x3——4 rows, 3 columns</li>
+<li>half2x1——2 rows, 1 column</li>
+<li>float1x4——1 row, 4 colomns</li>
+</ul>
+<p>可以提取矩阵的元素形成向量：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">float3x3 matrix = &#123;<span class="number">0</span>,<span class="number">1</span>,<span class="number">2</span>,</span><br><span class="line">                   <span class="number">3</span>,<span class="number">4</span>,<span class="number">5</span>,</span><br><span class="line">                   <span class="number">6</span>,<span class="number">7</span>,<span class="number">8</span>&#125;;</span><br><span class="line">float3 row0 = matrix[<span class="number">0</span>]; <span class="comment">// (0, 1, 2)</span></span><br><span class="line">float3 row1 = matrix[<span class="number">1</span>]; <span class="comment">// (3, 4, 5)</span></span><br><span class="line">float3 row2 = matrix[<span class="number">2</span>]; <span class="comment">// (6, 7, 8)</span></span><br><span class="line"><span class="keyword">float</span> row1column2 = matrix[<span class="number">1</span>][<span class="number">2</span>]; <span class="comment">// 5</span></span><br><span class="line"><span class="comment">// Note we could also do</span></span><br><span class="line"><span class="keyword">float</span> row1column2 = matrix[<span class="number">1</span>].z;</span><br></pre></td></tr></table></figure></p>
+<p>矩阵经常用于不同坐标系的变换，所以常常会用到矩阵的乘法。矩阵与向量的乘法不能用*而要用mul(matrix, vector)来实现。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mul(GetObjectToWorldMatrix(), float4(positionOS, <span class="number">1.0</span>)).xyz;</span><br><span class="line"><span class="comment">// GetObjectToWorldMatrix() 返回 "UNITY_MATRIX_M"，是Unity传入的模型矩阵</span></span><br></pre></td></tr></table></figure></p>
+<p>上方的方法其实就是<font color="DarkTurquoise">TransformObjectToWorld()</font>函数。一定要注意mul(x,y)的输入顺序，如果第一个输入为向量，那么会将其定义为行向量(row vector, 1 row n column)，放在第二个位置则认为它是列向量(column vector, n rows 1 column)。例如，float3向量放在x处，那么相当于float1x3的矩阵，放在y处则为float3x1的矩阵。</p>
+<p>相乘的矩阵，第一个矩阵的列数要与第二个矩阵的行数相同。计算结果的行数与前者相同，列数与后者相同。例如，mul(float4x4, float4)的结果为float4x1，也就是float4。</p>
+<h3 id="数组"><a href="#数组" class="headerlink" title="数组"></a>数组</h3><p>着色器中是可以声明数组的，但是Shaderlab的属性和材质面板不支持显示，需要通过C#脚本来调整。数组的大小需要在着色器中声明，保证为常量来规避内存问题。如果还不确定数组需要的大小，可以设置一个最大值，或者通过一个float值来表示数组的长度。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">float</span> _Array[<span class="number">10</span>]; <span class="comment">// Float array</span></span><br><span class="line">float4 _Array[<span class="number">10</span>]; <span class="comment">// Vector array</span></span><br><span class="line">float4x4 _Array[<span class="number">10</span>]; <span class="comment">// Matrix array</span></span><br></pre></td></tr></table></figure></p>
+<p>可以在脚本中通过<font color="DarkTurquoise">material.SetFloatArray</font>或<font color="DarkTurquoise">Shader.SetGlobalFloatArray</font>来设置数组。另外还有<font color="DarkTurquoise">SetVectorArray</font>和<font color="DarkTurquoise">SetMatrixArray</font>以及设置全局的版本。</p>
+<h3 id="其他类型"><a href="#其他类型" class="headerlink" title="其他类型"></a>其他类型</h3><p>HLSL还包含一些类型如Texture和Sampler，可以在URP中通过宏定义：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">TEXTURE2D(textureName);</span><br><span class="line">SAMPLER(sampler_textureName);</span><br></pre></td></tr></table></figure></p>
+<p>还有缓冲Buffer类型，可以在脚本中通过<font color="DarkTurquoise">material.SetBuffer</font>或<font color="DarkTurquoise">Shader.SetGlobalBuffer</font>设置。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> SHADER_API_D3D11</span></span><br><span class="line">StructuredBuffer&lt;float3&gt; buffer;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="comment">// 查看 https://docs.unity3d.com/Manual/SL-ShaderCompileTargets.html</span></span><br></pre></td></tr></table></figure><br>流程控制的方法如if/for/while等与C#相同。</p>
+<h3 id="函数"><a href="#函数" class="headerlink" title="函数"></a>函数</h3><p>在HLSL中声明函数与C#相似，例如：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">float3 <span class="title">example</span><span class="params">(float3 a, float3 b)</span></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> a * b;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>float3是返回类型，example是函数名，()中是输入参数，{}是函数体。 空返回类型使用void；可以使用”out”关键字定义输出参数，或者”inout”表示其为输入参数并对其进行修改后输出。<br>可能会见到一些”inline”函数(内联函数)，表示编译器每次调用该内联函数处都会复制一份该函数，对于简短的函数，可以有效降低调用函数产生的开销。<br>可能还会看到一些如下的函数形式：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> EXAMPLE(x, y) ((x) * (y))</span></span><br></pre></td></tr></table></figure></p>
+<p>这是<font color="DarkTurquoise">macro(宏)</font>，宏会在编前将调用宏的地方替换成宏指向的原意。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">float</span> f = EXAMPLE(<span class="number">3</span>, <span class="number">5</span>);</span><br><span class="line">float3 a = float3(<span class="number">1</span>,<span class="number">1</span>,<span class="number">1</span>);</span><br><span class="line">float3 f2 = EXAMPLE(a, float3(<span class="number">0</span>,<span class="number">1</span>,<span class="number">0</span>));</span><br><span class="line"> </span><br><span class="line"><span class="comment">// 变为：</span></span><br><span class="line"><span class="keyword">float</span> f = ((<span class="number">3</span>) * (<span class="number">5</span>));</span><br><span class="line"><span class="keyword">float</span> a = <span class="keyword">float</span>(<span class="number">1</span>,<span class="number">1</span>,<span class="number">1</span>);</span><br><span class="line">float3 f2 = ((a) * (float3(<span class="number">0</span>,<span class="number">1</span>,<span class="number">0</span>)));</span><br><span class="line"><span class="comment">// 然后编译着色器</span></span><br><span class="line"> </span><br><span class="line"><span class="comment">// 注意宏中的x和y都加了括号</span></span><br><span class="line"><span class="comment">// 那么：</span></span><br><span class="line"><span class="keyword">float</span> b = EXAMPLE(<span class="number">1</span>+<span class="number">2</span>, <span class="number">3</span>+<span class="number">4</span>);</span><br><span class="line"><span class="comment">// 变为：</span></span><br><span class="line"><span class="keyword">float</span> b = ((<span class="number">1</span>+<span class="number">2</span>) * (<span class="number">3</span>+<span class="number">4</span>)); <span class="comment">// 3 * 7, so 21</span></span><br><span class="line"><span class="comment">// 如果不加括号，那么就会是如下的结果：</span></span><br><span class="line"><span class="keyword">float</span> b = (<span class="number">1</span>+<span class="number">2</span>*<span class="number">3</span>+<span class="number">4</span>)</span><br></pre></td></tr></table></figure></p>
+<p>宏还有函数不好实现的用法，例如：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> TRANSFORM_TEX(tex,name) (tex.xy * name##_ST.xy + name##_ST.zw)</span></span><br><span class="line"> </span><br><span class="line"><span class="comment">// 使用：</span></span><br><span class="line">OUT.uv = TRANSFORM_TEX(IN.uv, _MainTex)</span><br><span class="line"> </span><br><span class="line"><span class="comment">// 变为：</span></span><br><span class="line">OUT.uv = (IN.uv.xy * _MainTex_ST.xy + _MainTex_ST.zw);</span><br></pre></td></tr></table></figure></p>
+<p>“##”标识符在宏中获取名称及_ST部分，生成_MainTex_ST。当然，_MainTex_ST仍然需要定义。</p>
+<h3 id="开始编写着色器"><a href="#开始编写着色器" class="headerlink" title="开始编写着色器"></a>开始编写着色器</h3><p>着色器通常包含两个阶段，顶点着色器(vertex shader)和片元着色器(fragment shader)。模型的每个顶点都会运行顶点着色器，屏幕将会显示的每个像素都会运行片元着色器。一些片元可能会被丢弃掉(如alpha裁切和模板着色器)，所以不会成为最终的像素(因此有人不喜欢称片元着色器为像素着色器)。另外还有壳/域着色器、几何着色器和计算着色器，暂不讨论。这些着色器在URP和内置管线的工作方式是一样的。<br>在着色器中，使用HLSLINCLUDE包含的代码会在SubShader中的每个Pass被自动包含进来。不是必须的，<font color="DarkTurquoise">但使用SRP Batcher时，如UnityPerMaterial CBUFFER这样每pass相同的内容使用HLSLINCLUDE则非常合适。CBUFFER需要包含暴露的所有属性(与Shaderlab属性语义块中定义的一致)，不可以包含没有暴露的属性，纹理不需要被包含在CBUFFER中。</font><br>使用material.SetColor/SetFloat/SetVector等等函数可以在C#脚本中实现对未暴露参数的修改。<font color="DarkTurquoise">但是使用SRP Batcher对多个带有不同数值的材质示例进行批处理时会产生问题。使用Shader.SetGlobalColor/Float/Vector等函数可以规避此问题，但如果一定需要每个材质示例带有不同数值，那么必须要暴露属性并在CBUFFER中定义。</font><br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">HLSLINCLUDE</span><br><span class="line">    <span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"</span></span></span><br><span class="line"> </span><br><span class="line">    CBUFFER_START(UnityPerMaterial)</span><br><span class="line">    float4 _BaseMap_ST;</span><br><span class="line">    float4 _BaseColor;</span><br><span class="line">    <span class="comment">//float4 _ExampleDir;</span></span><br><span class="line">    <span class="comment">//float _ExampleFloat;</span></span><br><span class="line">    CBUFFER_END</span><br><span class="line">ENDHLSL</span><br></pre></td></tr></table></figure></p>
+<p><font color="DarkTurquoise">上方代码包含了URP ShaderLibrary中的Core.hlsl，类似于内置管线的UnityCG.cginc。</font>此文件中也自动包含了一些其他的库文件，其中包含大量有用和常用的函数与宏。在HLSLPROGRAM中首先要做的就是声明顶点着色器和片元着色器。通常用”vert”和”frag”作为两者的名字，当然可以随意定义。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">HLSLPROGRAM</span><br><span class="line"> </span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> vertex vert</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> fragment frag</span></span><br><span class="line"> </span><br><span class="line">...</span><br><span class="line"> </span><br><span class="line">ENDHLSL</span><br></pre></td></tr></table></figure>
+<p>在定义这俩函数之前，经常需要定义两个结构体。会在下个小节介绍。</p>
+<h2 id="结构体"><a href="#结构体" class="headerlink" title="结构体"></a>结构体</h2><p>在定义顶点着色器和片元着色器之前，需要定义一些用于传输数据的结构体。在内置管线中，这些结构体往往命名为<font color="DarkTurquoise">“appdata”</font>和<font color="DarkTurquoise">“v2f”</font>(vertex to fragment的简写)，在URP中，官方使用的是<font color="DarkTurquoise">“Attributes”</font>和<font color="DarkTurquoise">“Varyings”</font>。这些名称可以随意命名，但为了协作方便，往往遵循统一的命名规则。<br>URP的ShaderLibrary中也使用一些结构体来组织函数中需要的数据。例如光照和着色计算中需要的InputData和SurfaceData，将会在光照部分讨论这些。因为第一个案例是Unlit着色器，所以结构体比较简单。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Attributes</span> &#123;</span></span><br><span class="line">	float4 positionOS	: POSITION;</span><br><span class="line">	float2 uv			: TEXCOORD0;</span><br><span class="line">	float4 color		: COLOR;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<p>Attributes结构体包含了传入顶点着色器的数据。将模型每个顶点的数据传入顶点着色器，使用大写的宏来实现。通常包括顶点位置(POSITION)，顶点颜色(COLOR)，纹理坐标——UV(TEXCOORD)。一个模型拥有8个不同的UV通道，通过TEXCOORD0到TEXCOORD7读取。<br>Mesh.uv是TEXCOORD0，没有Mesh.uv1，下一个通道是Mesh.uv2，即TEXCOORD1。因此Mesh.uv8对应的是TEXCOORD7。也可以通过NORMAL读取顶点的法线，通过TANGENT读取切线。在Unlit着色器中很少用到。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Varyings</span> &#123;</span></span><br><span class="line">	float4 positionCS	: SV_POSITION;</span><br><span class="line">	float2 uv			: TEXCOORD0;</span><br><span class="line">	float4 color		: COLOR;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<p>Varyings结构体包含顶点着色器输出的数据，并且作为片元着色器的输入数据的结构体(假设中间不存在几何着色器，否则需要额外的结构体，本篇不会涉及到)。定义好结构体后，一般还会定义需要用的纹理和纹理采样器(属性语义块中纹理之外的属性在CBUFFER中定义)。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">TEXTURE2D(_BaseMap);</span><br><span class="line">SAMPLER(sampler_BaseMap);</span><br></pre></td></tr></table></figure></p>
+<h2 id="顶点着色器"><a href="#顶点着色器" class="headerlink" title="顶点着色器"></a>顶点着色器</h2><p>顶点着色器一个重要任务是将模型顶点位置从模型空间转换到剪裁空间。这样才可以正确渲染将要显示在屏幕上的片元/像素。在内置管线中使用UnityObjectToClipPos函数可以实现该操作，在URP中使用TransformObjectToHClip函数来代替(SpaceTransforms.hlsl)。另外也可以使用下属方式来获取剪裁空间的位置。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Varyings <span class="title">vert</span><span class="params">(Attributes IN)</span> </span>&#123;</span><br><span class="line">    Varyings OUT;</span><br><span class="line"> </span><br><span class="line">    VertexPositionInputs positionInputs = GetVertexPositionInputs(IN.positionOS.xyz);</span><br><span class="line">    OUT.positionCS = positionInputs.positionCS;</span><br><span class="line">    <span class="comment">// 或者：</span></span><br><span class="line">    <span class="comment">//OUT.positionCS = TransformObjectToHClip(IN.positionOS.xyz);</span></span><br><span class="line"> </span><br><span class="line">    OUT.uv = TRANSFORM_TEX(IN.uv, _BaseMap);</span><br><span class="line">    OUT.color = IN.color;</span><br><span class="line">    <span class="keyword">return</span> OUT;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>使用函数<font color="DarkTurquoise">GetVertexPositionInputs</font>可以获取各种空间的位置信息。在URP管线的ShaderVariablesFunctions.hlsl中可以查看该函数的实现方式。包含Core.hlsl会自动包含该文件。输入Attributes中的模型空间坐标，得到VertexPositionInputs结构体，它包含了下述位置信息：</p>
+<ul>
+<li>positionWS，世界空间坐标</li>
+<li>positionVS，观察空间坐标</li>
+<li>positionCS，剪裁空间坐标</li>
+<li>positionNDC，归一化设备坐标系中的坐标</li>
+</ul>
+<p>Unlit着色器中不需要其他那些坐标信息，因此在编译时它们不会被编译，因此不会产生额外的计算开销。<br>顶点着色器的其他任务还包括将顶点数据传入到片元着色器，如顶点色OUT.color = IN.color。如果需要采样纹理，那么还需要传输模型的UV。使用OUT.uv = IN.uv来实现(假设都是float2)。经常会使用TRANSFORM_TEX宏来实现在材质面板控制纹理采样器的UV偏移和平铺。如_BaseMap_ST，S是scale；T是translate。在内置管线和URP中都可以使用该宏<font color="DarkTurquoise">(core/ShaderLibrary/Macros.hlsl)</font>。这个宏的作用其实是IN.uv.xy * _BaseMap_ST.xy + _BaseMap_ST.zw。但要注意的是<font color="DarkTurquoise">TextureName_ST这个float4需要在CBUFFER中定义</font>。<br>获取法线的函数与获取位置的函数类似：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">VertexNormalInputs normalInputs = GetVertexNormalInputs(IN.normalOS, IN.tangentOS);</span><br></pre></td></tr></table></figure></p>
+<p>GetVertexNormalInputs函数可以将模型空间的法线和切线转换到世界空间。VertexNormalInputs包含了normalWS, tangentWS和bitangentWS三个向量。另外可以使用TransformObjectToWorldNormal(IN.normalOS)函数将模型空间法线转换到世界空间。</p>
+<h2 id="片元着色器"><a href="#片元着色器" class="headerlink" title="片元着色器"></a>片元着色器</h2><p>片元着色器主要负责决定像素的颜色(包括alpha)。对于Unlit着色器来说，可以是简单的纯色，也可以是采样纹理后的颜色。对于Lit着色器，会稍微复杂一些。但URP管线提供了一些方便的函数，会在光照小节讨论。三角面上的片元/像素的数据由组成该三角面的三个顶点在Varyings中的数据进行线性插值来决定。因此，如果三个顶点从顶点着色器输出的颜色分别是(1, 0, 0), (0, 1, 0)和(0, 0, 1)，那么片元着色器得到的颜色则如下图：<br><img src="/blog/2020/06/08/urpshadercode/01.png" alt></p>
+<p>如果对顶点法线进行线性插值(用于光照和着色计算)，那么插值后的法线很可能不是单位向量。结果类似于重心坐标系统，中心(0.33, 0.33, 0.33)的长度是0.577左右，而不是长度为1的单位向量。因此片元着色器获取插值后的法线需要先进行标准化。当然很多时候插值后的法向量的长度接近1，如果想简化计算，可以不进行标准化。那么现在Unlit材质的像素着色器如下：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">half4 <span class="title">frag</span><span class="params">(Varyings IN)</span> : SV_Target </span>&#123;</span><br><span class="line">    half4 baseMap = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, IN.uv);</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> baseMap * _BaseColor * IN.color;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>该着色器输出类型为half4，颜色由纹理颜色、基础色和顶点色共同决定。SV_Target语义表示结果作为片元着色器最终的输出颜色。另外还有类型为float的SV_Depth，用于重写每像素的Z缓冲值。一些GPU为了优化考虑，深度缓冲默认是关闭的。<font color="DarkTurquoise">片元着色器中使用SAMPLE_TEXTURE2D宏对纹理进行采样，该宏由URP的ShaderLibrary提供，输入参数是纹理、纹理采样器和UV。</font>另外也可以将像素alpha值低于某特定阈值的像素丢弃掉，那么那部分的模型就不可见。例如四边面片制作的草和树叶。丢弃像素的过程在不透明材质和半透材质中都可以实现，也是常说的alpha剪裁/剔除(clip/cutoff)。材质中可以使用_Cutoff属性可以控制该阈值，不仅要在属性语义块中定义，还要在CBUFFER中定义。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (_BaseMap.a &lt; _Cutoff)&#123;</span><br><span class="line">    discard;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 或者</span></span><br><span class="line">clip(_BaseMap.a - _Cutoff);</span><br><span class="line"><span class="comment">// 在片元着色器函数中使用</span></span><br></pre></td></tr></table></figure>
+<p>那么目前为止无光照的着色器的完整代码如下：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Example Shader for Universal RP</span></span><br><span class="line"><span class="comment">// Written by @Cyanilux</span></span><br><span class="line"><span class="comment">// https://cyangamedev.wordpress.com/urp-shader-code/</span></span><br><span class="line">Shader <span class="string">"Custom/UnlitShaderExample"</span> &#123;</span><br><span class="line">    Properties &#123;</span><br><span class="line">        _BaseMap (<span class="string">"Example Texture"</span>, <span class="number">2</span>D) = <span class="string">"white"</span> &#123;&#125;</span><br><span class="line">        _BaseColor (<span class="string">"Example Colour"</span>, Color) = (<span class="number">0</span>, <span class="number">0.66</span>, <span class="number">0.73</span>, <span class="number">1</span>)</span><br><span class="line">        <span class="comment">//_ExampleDir ("Example Vector", Vector) = (0, 1, 0, 0)</span></span><br><span class="line">        <span class="comment">//_ExampleFloat ("Example Float (Vector1)", Float) = 0.5</span></span><br><span class="line">    &#125;</span><br><span class="line">    SubShader &#123;</span><br><span class="line">        Tags &#123; <span class="string">"RenderType"</span>=<span class="string">"Opaque"</span> <span class="string">"RenderPipeline"</span>=<span class="string">"UniversalRenderPipeline"</span> &#125;</span><br><span class="line">       </span><br><span class="line">        HLSLINCLUDE</span><br><span class="line">            #include <span class="string">"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"</span></span><br><span class="line"> </span><br><span class="line">            CBUFFER_START(UnityPerMaterial)</span><br><span class="line">            float4 _BaseMap_ST;</span><br><span class="line">            float4 _BaseColor;</span><br><span class="line">            <span class="comment">//float4 _ExampleDir;</span></span><br><span class="line">            <span class="comment">//float _ExampleFloat;</span></span><br><span class="line">            CBUFFER_END</span><br><span class="line">        ENDHLSL</span><br><span class="line">       </span><br><span class="line">        Pass &#123;</span><br><span class="line">            Name <span class="string">"Example"</span></span><br><span class="line">            Tags &#123; <span class="string">"LightMode"</span>=<span class="string">"UniversalForward"</span> &#125;</span><br><span class="line">           </span><br><span class="line">            HLSLPROGRAM</span><br><span class="line">            #pragma vertex vert</span><br><span class="line">            #pragma fragment frag</span><br><span class="line">           </span><br><span class="line">            struct Attributes &#123;</span><br><span class="line">                float4 positionOS   : POSITION;</span><br><span class="line">                float2 uv           : TEXCOORD0;</span><br><span class="line">                float4 color        : COLOR;</span><br><span class="line">            &#125;;</span><br><span class="line"> </span><br><span class="line">            <span class="class"><span class="keyword">struct</span> <span class="title">Varyings</span> &#123;</span></span><br><span class="line">                float4 positionCS  : SV_POSITION;</span><br><span class="line">                float2 uv           : TEXCOORD0;</span><br><span class="line">                float4 color        : COLOR;</span><br><span class="line">            &#125;;</span><br><span class="line"> </span><br><span class="line">            TEXTURE2D(_BaseMap);</span><br><span class="line">            SAMPLER(sampler_BaseMap);</span><br><span class="line">           </span><br><span class="line">            <span class="function">Varyings <span class="title">vert</span><span class="params">(Attributes IN)</span> </span>&#123;</span><br><span class="line">                Varyings OUT;</span><br><span class="line"> </span><br><span class="line">                VertexPositionInputs positionInputs = GetVertexPositionInputs(IN.positionOS.xyz);</span><br><span class="line">                OUT.positionCS = positionInputs.positionCS;</span><br><span class="line">                <span class="comment">// Or this :</span></span><br><span class="line">                <span class="comment">//OUT.positionCS = TransformObjectToHClip(IN.positionOS.xyz);</span></span><br><span class="line">                OUT.uv = TRANSFORM_TEX(IN.uv, _BaseMap);</span><br><span class="line">                OUT.color = IN.color;</span><br><span class="line">                <span class="keyword">return</span> OUT;</span><br><span class="line">            &#125;</span><br><span class="line">           </span><br><span class="line">            <span class="function">half4 <span class="title">frag</span><span class="params">(Varyings IN)</span> : SV_Target </span>&#123;</span><br><span class="line">                half4 baseMap = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, IN.uv);</span><br><span class="line">               </span><br><span class="line">                <span class="keyword">return</span> baseMap * _BaseColor * IN.color;</span><br><span class="line">            &#125;</span><br><span class="line">            ENDHLSL</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h2 id="关键字和着色器变体"><a href="#关键字和着色器变体" class="headerlink" title="关键字和着色器变体"></a>关键字和着色器变体</h2><p>讨论光照之前，先谈谈着色器中的关键字(keyword)和变体(variant)，在URP ShaderLibrary中使用的非常多，所以知道关键字和变体的机制十分有意义，这样才能正确处理光照的函数。<br>在着色器中，可以声明很多#pragma指令，带有multi-compile和shader_feature指令可以控制关键字是否开启，控制着色器某些部分生效与否。这样着色器会编译出多个版本，也就是着色器的变体。</p>
+<h3 id="multi-compile"><a href="#multi-compile" class="headerlink" title="multi_compile"></a>multi_compile</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _A _B _C (...etc)</span></span><br></pre></td></tr></table></figure>
+<p>这个示例中，我们会产生三种变体，_A，_B和_C是关键字。<br>那么在着色器的代码中，用法如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> _A</span></span><br><span class="line"><span class="comment">// 如果开启A，则编译此段代码</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"> </span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> _B</span></span><br><span class="line"><span class="comment">// 如果B没开启，也就是开启了A和C，那么编译此段代码。#ifndef表示没有定义</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line"><span class="comment">// 否则表示B开启了，编译此段代码</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"> </span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> defined(_A) || defined(_C)</span></span><br><span class="line"><span class="comment">// 开启了A或者开启了C，则编译此段代码。</span></span><br><span class="line"><span class="comment">// 像这样有复合判断条件的情况，需要使用#if defined()。</span></span><br><span class="line"><span class="comment">// 但要注意的是，因为这几个关键字是在同一个multi_compile中定义的，因此不会出现&amp;&amp;的情况</span></span><br><span class="line"><span class="comment">// 即不能存在A &amp;&amp; B, A &amp;&amp; C, B &amp;&amp; C</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"> </span><br><span class="line"><span class="comment">// 另外else if在HLSL中是#elif</span></span><br></pre></td></tr></table></figure>
+<h3 id="shader-feature"><a href="#shader-feature" class="headerlink" title="shader_feature"></a>shader_feature</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> shader_feature _A _B</span></span><br></pre></td></tr></table></figure>
+<p>与multi_compile的机制一样，但区别是最终的打包版本不包含没有使用的变体。因此，在运行时开启或关闭这些关键字是不合理的，因为有些变体代码没有被编译进最终的版本。如果要在运行时处理某些关键字，那么要使用multi_compile来代替。</p>
+<h3 id="着色器变体"><a href="#着色器变体" class="headerlink" title="着色器变体"></a>着色器变体</h3><p>每增加一个multi_compile和shader_feature，都会增加更多的着色器变体。下方的例子中：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _A _B _C</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _D _E</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> shader_feature _F _G</span></span><br></pre></td></tr></table></figure></p>
+<p>第一行存在三种可能性，但是第二行又有两种可能性。因此会出现6种不同的组合方式:<br>A &amp; D, A &amp; E, B &amp; D, B &amp; E, C &amp; D and C &amp; E<br>第三行又有两种可能性。因此现在一共有12种不同的组合。但因为使用的是shader_feature，因此有些变体不会存在与最终的打包版本中。<br>每增加一个带有两个变体的multi_compile都会使最终的组合翻倍。10个这样的multi_compile就会产生1024个着色器变体组合。每个组合都会出现在最终的包体中，那么编译时间也会增加，包体大小也会增加。<br>如果想查看一个着色器存在多少种变体，可以点击材质面板的”Compile and Show Code”按钮，便会看到变体的数量。如果点击”skip unused shader_feature”可以切换是否查看全部的变体。<br>上述的指令也有针对顶点着色器和片元着色器的版本，这样可以有效减少最终变体组和的数量，优化包体和编译时间。例如：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile_vertex _ _A</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile_fragment _ _B</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> shader_feature_vertex _ _C</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> shader_feature_fragment _ _D</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="关键字的上限"><a href="#关键字的上限" class="headerlink" title="关键字的上限"></a>关键字的上限</h3><p>每个工程关键字的数量最多为256，所以最好遵循通用的关键字便于协作。另外有时会看到multi_compile和shader_feature后面会接”_”，这并不会产生额外的关键字。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _ _KEYWORD</span></span><br><span class="line"> </span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> shader_feature _KEYWORD</span></span><br><span class="line"><span class="comment">// 其实就是下面的简写</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> shader_feature _ _KEYWORD</span></span><br><span class="line"> </span><br><span class="line"><span class="comment">// 如果想知道关键字是否禁用，可以使用：</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> _KEYWORD</span></span><br><span class="line"><span class="comment">// 或者 #if !defined(_KEYWORD)</span></span><br><span class="line"><span class="comment">// 或者 #ifdef _KEYWORD #else</span></span><br><span class="line"><span class="comment">// 代码</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure></p>
+<p>为了防止超过关键字的最大上限，可以使用multi_compile和shader_feature的局部版本。这些关键字只会在当前着色器中有效，每个着色器的局部关键字的上限是64。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile_local _ _KEYWORD</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> shader_feature_local _KEYWORD</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 当然局部关键字也有vertex和fragment版本</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile_local_fragment _ _KEYWORD</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> shader_feature_local_vertex _KEYWORD</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="光照"><a href="#光照" class="headerlink" title="光照"></a>光照</h2><p>在内置管线中，需要处理光照和着色的着色器为Surface Shader。可以选择不同的光照模型，如physically-based Standard和StandardSpecular或者Lambert(diffuse)和BlinnPhong(specular)模型。也可以编写自定义的光照模型，例如卡通着色。</p>
+<p><font color="DarkTurquoise">URP管线不支持surface shader，但ShaderLibrary提供了一些函数来辅助处理很多常用的光照计算。这些函数包含在Lighting.hlsl文件中，需要自己在代码中包含。</font> UniversalFragmentPBR函数可以处理基于物理的光照着色，下一节介绍。现在仅讨论主平行光的简单光照和阴影。<br>在Lighting.hlsl中的函数GetMainLight()可以获取主要平行光的数据，那么需要先包含Lighting.hlsl，并且在HLSLPROGRAM后添加几个multi_compile指令来提供一些控制接受阴影的关键字。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _ _MAIN_LIGHT_SHADOWS</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _ _SHADOWS_SOFT</span></span><br><span class="line"> </span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"</span></span></span><br></pre></td></tr></table></figure>
+<p>下面，我们需要顶点法线来处理光照和着色，所以在结构体中添加该属性，并且更新顶点着色器。下面的代码是新增的部分：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Attributes</span> &#123;</span></span><br><span class="line">    ...</span><br><span class="line">    float4 normalOS     : NORMAL;</span><br><span class="line">&#125;;</span><br><span class="line"> </span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Varyings</span> &#123;</span></span><br><span class="line">    ...</span><br><span class="line">    float3 normalWS     : NORMAL;</span><br><span class="line">    float3 positionWS   : TEXCOORD2;</span><br><span class="line">&#125;;</span><br><span class="line">...</span><br><span class="line"><span class="function">Varyings <span class="title">vert</span><span class="params">(Attributes IN)</span> </span>&#123;</span><br><span class="line">    Varyings OUT;</span><br><span class="line">    VertexPositionInputs positionInputs = GetVertexPositionInputs(IN.positionOS.xyz);</span><br><span class="line">    ...</span><br><span class="line">    OUT.positionWS = positionInputs.positionWS;</span><br><span class="line"> </span><br><span class="line">    VertexNormalInputs normalInputs = GetVertexNormalInputs(IN.normalOS.xyz);</span><br><span class="line">    OUT.normalWS = normalInputs.normalWS;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> OUT;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在片元着色器，可以获取世界空间的法向量，并且使用世界空间的位置来计算阴影坐标(当然可以在顶点着色器中计算阴影坐标然后传入片元着色器，但仅在shadow cascades关键字禁用时有效)。现在就暂且保持简单的方式。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">half4 <span class="title">frag</span><span class="params">(Varyings IN)</span> : SV_Target </span>&#123;</span><br><span class="line">    half4 baseMap = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, IN.uv);</span><br><span class="line">    half4 color = baseMap * _BaseColor * IN.color;</span><br><span class="line"> </span><br><span class="line">    float4 shadowCoord = TransformWorldToShadowCoord(IN.positionWS.xyz);</span><br><span class="line">    Light light = GetMainLight(shadowCoord);</span><br><span class="line"> </span><br><span class="line">    half3 diffuse = LightingLambert(light.color, light.direction, IN.normalWS);</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> half4(color.rgb * diffuse * light.shadowAttenuation, color.a);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>同时，我们的着色器也需要接受从其他着色器而来的阴影，但现在没有ShadowCaster pass，所以不会对自身和其他物体产生阴影，见下一节。如果仅需要阴影而不需要漫反射，那么可以移除漫反射光照计算，只使用light.shadowAttenuation。如果想进一步扩展，可以包含环境光或烘焙的全局光照以及其他额外的灯光，可将Lighting.hlsl中的UniversalFragmentBlinnPhong函数作为参考示例。也可以直接使用这个函数，需要InputData结构体作为输入，也是PBR着色案例中需要使用的结构体。</p>
+<h2 id="PRB光照"><a href="#PRB光照" class="headerlink" title="PRB光照"></a>PRB光照</h2><p>基于物理的渲染Physically Based Rendering(PBR)是Unity的”Standard”着色器使用的着色模型，也就是URP的Lit着色器以及Shader Graph中的 PBR Master节点。<br>前一节提过，内置管线的光照通过Surface Shader处理，”Standard”选项就是一个PBR模型。使用一个surface函数输出Albedo, Normal, Emission, Smoothness, AO, Alpha和Metallic(使用StandardSpecular流程则是Specular)。Unity会使用这些数据生成一个顶点着色器和片元着色器，处理PBR的光照计算和阴影计算。<br>URP管线不支持surface着色器，然而ShaderLibrary提供了帮助计算光照的函数。Lighting.hlsl中与PBR着色相关的函数有：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">half4 <span class="title">UniversalFragmentPBR</span><span class="params">(InputData inputData, half3 albedo,</span></span></span><br><span class="line"><span class="function"><span class="params">   half metallic, half3 specular, half smoothness, half occlusion, </span></span></span><br><span class="line"><span class="function"><span class="params">   half3 emission, half alpha)</span></span></span><br><span class="line"><span class="function"> </span></span><br><span class="line"><span class="function">half4 <span class="title">UniversalFragmentPBR</span><span class="params">(InputData inputData, SurfaceData surfaceData)</span></span></span><br><span class="line"><span class="function"> </span></span><br><span class="line"><span class="function">half4 <span class="title">UniversalFragmentBlinnPhong</span><span class="params">(InputData inputData, half3 diffuse, half4 specularGloss, half smoothness, half3 emission, half alpha)</span></span></span><br></pre></td></tr></table></figure>
+<p>首先定义PBR着色需要的属性，暂且不引入metallic/specular和occlusion贴图，因为URP提供的函数对这两种贴图的处理不是很好。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">Properties &#123;</span><br><span class="line">    _BaseMap (<span class="string">"Base Texture"</span>, <span class="number">2</span>D) = <span class="string">"white"</span> &#123;&#125;</span><br><span class="line">    _BaseColor (<span class="string">"Example Colour"</span>, Color) = (<span class="number">0</span>, <span class="number">0.66</span>, <span class="number">0.73</span>, <span class="number">1</span>)</span><br><span class="line">    _Smoothness (<span class="string">"Smoothness"</span>, Float) = <span class="number">0.5</span></span><br><span class="line"> </span><br><span class="line">    [Toggle(_ALPHATEST_ON)] _EnableAlphaTest(<span class="string">"Enable Alpha Cutoff"</span>, Float) = <span class="number">0.0</span></span><br><span class="line">    _Cutoff (<span class="string">"Alpha Cutoff"</span>, Float) = <span class="number">0.5</span></span><br><span class="line"> </span><br><span class="line">    [Toggle(_NORMALMAP)] _EnableBumpMap(<span class="string">"Enable Normal/Bump Map"</span>, Float) = <span class="number">0.0</span></span><br><span class="line">    _BumpMap (<span class="string">"Normal/Bump Texture"</span>, <span class="number">2</span>D) = <span class="string">"bump"</span> &#123;&#125;</span><br><span class="line">    _BumpScale (<span class="string">"Bump Scale"</span>, Float) = <span class="number">1</span></span><br><span class="line"> </span><br><span class="line">    [Toggle(_EMISSION)] _EnableEmission(<span class="string">"Enable Emission"</span>, Float) = <span class="number">0.0</span></span><br><span class="line">    _EmissionMap (<span class="string">"Emission Texture"</span>, <span class="number">2</span>D) = <span class="string">"white"</span> &#123;&#125;</span><br><span class="line">    _EmissionColor (<span class="string">"Emission Colour"</span>, Color) = (<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">    &#125;</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">CBUFFER_START(UnityPerMaterial)</span><br><span class="line">    float4 _BaseMap_ST; </span><br><span class="line">    float4 _BaseColor;</span><br><span class="line">    <span class="keyword">float</span> _BumpScale;</span><br><span class="line">    float4 _EmissionColor;</span><br><span class="line">    <span class="keyword">float</span> _Smoothness;</span><br><span class="line">    <span class="keyword">float</span> _Cutoff;</span><br><span class="line">CBUFFER_END</span><br></pre></td></tr></table></figure></p>
+<p>需要添加需要的multi_compile, shader_feature，调整Attributes和Varyings结构体。属性语义块中定义的TOGGLE属性允许材质编辑器对shader_feature进行开启或禁用。另外可以编写自定义的材质面板UI。如果想要支持构建光照贴图，还需要传入光照贴图UV。另外作者引入了ShaderLibrary中的SurfaceInput.hlsl和SurfaceData.hlsl，其中的SurfaceData结构体可以作为PBR着色需要的数据的载体，并且有一些对不同贴图采样的函数。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> shader_feature _NORMALMAP</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> shader_feature _ALPHATEST_ON</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> shader_feature _ALPHAPREMULTIPLY_ON</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> shader_feature _EMISSION</span></span><br><span class="line"><span class="comment">//#pragma shader_feature _METALLICSPECGLOSSMAP</span></span><br><span class="line"><span class="comment">//#pragma shader_feature _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A</span></span><br><span class="line"><span class="comment">//#pragma shader_feature _OCCLUSIONMAP</span></span><br><span class="line"> </span><br><span class="line"><span class="comment">//#pragma shader_feature _SPECULARHIGHLIGHTS_OFF</span></span><br><span class="line"><span class="comment">//#pragma shader_feature _ENVIRONMENTREFLECTIONS_OFF</span></span><br><span class="line"><span class="comment">//#pragma shader_feature _SPECULAR_SETUP</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> shader_feature _RECEIVE_SHADOWS_OFF</span></span><br><span class="line"> </span><br><span class="line"><span class="comment">// URP 关键字</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _ _MAIN_LIGHT_SHADOWS</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _ _ADDITIONAL_LIGHT_SHADOWS</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _ _SHADOWS_SOFT</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _ _MIXED_LIGHTING_SUBTRACTIVE</span></span><br><span class="line"> </span><br><span class="line"><span class="comment">// Unity 定义的关键字</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _ DIRLIGHTMAP_COMBINED</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _ LIGHTMAP_ON</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile_fog</span></span><br><span class="line"> </span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"Packages/com.unity.render-pipelines.universal/ShaderLibrary/SurfaceInput.hlsl"</span></span></span><br><span class="line"> </span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Attributes</span> &#123;</span></span><br><span class="line">    float4 positionOS   : POSITION;</span><br><span class="line">    float3 normalOS     : NORMAL;</span><br><span class="line">    float4 tangentOS    : TANGENT;</span><br><span class="line">    float4 color        : COLOR;</span><br><span class="line">    float2 uv           : TEXCOORD0;</span><br><span class="line">    float2 lightmapUV   : TEXCOORD1;</span><br><span class="line">&#125;;</span><br><span class="line"> </span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Varyings</span> &#123;</span></span><br><span class="line">    float4 positionCS               : SV_POSITION;</span><br><span class="line">    float4 color                    : COLOR;</span><br><span class="line">    float2 uv                       : TEXCOORD0;</span><br><span class="line">    DECLARE_LIGHTMAP_OR_SH(lightmapUV, vertexSH, <span class="number">1</span>);</span><br><span class="line">    </span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> REQUIRES_WORLD_SPACE_POS_INTERPOLATOR</span></span><br><span class="line">    float3 positionWS               : TEXCOORD2;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    float3 normalWS                 : TEXCOORD3;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> _NORMALMAP</span></span><br><span class="line">    float4 tangentWS                : TEXCOORD4;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    float3 viewDirWS                : TEXCOORD5;</span><br><span class="line">    half4 fogFactorAndVertexLight   : TEXCOORD6;</span><br><span class="line">    <span class="comment">// x: fogFactor, yzw: vertex light</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR</span></span><br><span class="line">    float4 shadowCoord              : TEXCOORD7;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">&#125;;</span><br><span class="line"> </span><br><span class="line"><span class="comment">//TEXTURE2D(_BaseMap);</span></span><br><span class="line"><span class="comment">//SAMPLER(sampler_BaseMap);</span></span><br><span class="line"><span class="comment">// 移除，因为SurfaceInput.hlsl定义了_BaseMap</span></span><br></pre></td></tr></table></figure></p>
+<p>那么顶点着色器也需要更新：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">if</span> SHADER_LIBRARY_VERSION_MAJOR &lt; 9</span></span><br><span class="line">    <span class="comment">// This function was added in URP v9.x.x versions</span></span><br><span class="line">    <span class="comment">// If we want to support URP versions before, we need to handle it instead.</span></span><br><span class="line">    <span class="comment">// Computes the world space view direction (pointing towards the viewer).</span></span><br><span class="line">    <span class="function">float3 <span class="title">GetWorldSpaceViewDir</span><span class="params">(float3 positionWS)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (unity_OrthoParams.w == <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="comment">// Perspective</span></span><br><span class="line">            <span class="keyword">return</span> _WorldSpaceCameraPos - positionWS;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// Orthographic</span></span><br><span class="line">            float4x4 viewMat = GetWorldToViewMatrix();</span><br><span class="line">            <span class="keyword">return</span> viewMat[<span class="number">2</span>].xyz;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"> </span><br><span class="line"><span class="function">Varyings <span class="title">vert</span><span class="params">(Attributes IN)</span> </span>&#123;</span><br><span class="line">    Varyings OUT;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// 顶点位置</span></span><br><span class="line">    VertexPositionInputs positionInputs = GetVertexPositionInputs(IN.positionOS.xyz);</span><br><span class="line">    OUT.positionCS = positionInputs.positionCS;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> REQUIRES_WORLD_SPACE_POS_INTERPOLATOR</span></span><br><span class="line">    OUT.positionWS = positionInputs.positionWS;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    <span class="comment">// UVs &amp; 顶点色</span></span><br><span class="line">    OUT.uv = TRANSFORM_TEX(IN.uv, _BaseMap);</span><br><span class="line">    OUT.color = IN.color;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// 观察方向</span></span><br><span class="line">    OUT.viewDirWS = GetWorldSpaceViewDir(positionInputs.positionWS);</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// 法线和切线</span></span><br><span class="line">    VertexNormalInputs normalInputs = GetVertexNormalInputs(IN.normalOS, IN.tangentOS);</span><br><span class="line">    OUT.normalWS =  normalInputs.normalWS;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> _NORMALMAP</span></span><br><span class="line">    real sign = IN.tangentOS.w * GetOddNegativeScale();</span><br><span class="line">    OUT.tangentWS = half4(normalInputs.tangentWS.xyz, sign);</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"> </span><br><span class="line">    <span class="comment">// 顶点光照 &amp; 雾</span></span><br><span class="line">    half3 vertexLight = VertexLighting(positionInputs.positionWS, normalInputs.normalWS);</span><br><span class="line">    half fogFactor = ComputeFogFactor(positionInputs.positionCS.z);</span><br><span class="line">    OUT.fogFactorAndVertexLight = half4(fogFactor, vertexLight);</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// 烘焙光照 &amp; 球谐函数(没有烘焙灯光情况下的环境光照)</span></span><br><span class="line">    OUTPUT_LIGHTMAP_UV(IN.lightmapUV, unity_LightmapST, OUT.lightmapUV);</span><br><span class="line">    OUTPUT_SH(OUT.normalWS.xyz, OUT.vertexSH);</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// 阴影坐标</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR</span></span><br><span class="line">    OUT.shadowCoord = GetShadowCoord(positionInputs);</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    <span class="keyword">return</span> OUT;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>下面更新片元着色器，使用UniversalFragmentPBR函数，需要InputData结构体传入数据，我们不在片元着色器中创建和设置相关数据，而是封装另外一个函数，也会为贴图处理封装另外一个函数。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">InputData <span class="title">InitializeInputData</span><span class="params">(Varyings IN, half3 normalTS)</span></span>&#123;</span><br><span class="line">    InputData inputData = (InputData)<span class="number">0</span>;</span><br><span class="line"> </span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> defined(REQUIRES_WORLD_SPACE_POS_INTERPOLATOR)</span></span><br><span class="line">    inputData.positionWS = IN.positionWS;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">                 </span><br><span class="line">    half3 viewDirWS = SafeNormalize(IN.viewDirWS);</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> _NORMALMAP</span></span><br><span class="line">    <span class="keyword">float</span> sgn = IN.tangentWS.w; <span class="comment">// should be either +1 or -1</span></span><br><span class="line">    float3 bitangent = sgn * cross(IN.normalWS.xyz, IN.tangentWS.xyz);</span><br><span class="line">    inputData.normalWS = TransformTangentToWorld(normalTS, half3x3(IN.tangentWS.xyz, bitangent.xyz, IN.normalWS.xyz));</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">    inputData.normalWS = IN.normalWS;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"> </span><br><span class="line">    inputData.normalWS = NormalizeNormalPerPixel(inputData.normalWS);</span><br><span class="line">    inputData.viewDirectionWS = viewDirWS;</span><br><span class="line"> </span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)</span></span><br><span class="line">    inputData.shadowCoord = IN.shadowCoord;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">elif</span> defined(MAIN_LIGHT_CALCULATE_SHADOWS)</span></span><br><span class="line">    inputData.shadowCoord = TransformWorldToShadowCoord(inputData.positionWS);</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">    inputData.shadowCoord = float4(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"> </span><br><span class="line">    inputData.fogCoord = IN.fogFactorAndVertexLight.x;</span><br><span class="line">    inputData.vertexLighting = IN.fogFactorAndVertexLight.yzw;</span><br><span class="line">    inputData.bakedGI = SAMPLE_GI(IN.lightmapUV, IN.vertexSH, inputData.normalWS);</span><br><span class="line">    <span class="keyword">return</span> inputData;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function">SurfaceData <span class="title">InitializeSurfaceData</span><span class="params">(Varyings IN)</span></span>&#123;</span><br><span class="line">    SurfaceData surfaceData = (SurfaceData)<span class="number">0</span>;</span><br><span class="line">    <span class="comment">// 数字0会自动初始化结构体数据为0。</span></span><br><span class="line">         </span><br><span class="line">    half4 albedoAlpha = SampleAlbedoAlpha(IN.uv, TEXTURE2D_ARGS(_BaseMap, sampler_BaseMap));</span><br><span class="line">    surfaceData.alpha = Alpha(albedoAlpha.a, _BaseColor, _Cutoff);</span><br><span class="line">    surfaceData.albedo = albedoAlpha.rgb * _BaseColor.rgb * IN.color.rgb;</span><br><span class="line"></span><br><span class="line">    surfaceData.smoothness = _Smoothness;</span><br><span class="line">    surfaceData.normalTS = SampleNormal(IN.uv, TEXTURE2D_ARGS(_BumpMap, sampler_BumpMap), _BumpScale);</span><br><span class="line">    surfaceData.emission = SampleEmission(IN.uv, _EmissionColor.rgb, TEXTURE2D_ARGS(_EmissionMap, sampler_EmissionMap));</span><br><span class="line">    surfaceData.occlusion = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">return</span> surfaceData;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function">half4 <span class="title">frag</span><span class="params">(Varyings IN)</span> : SV_Target </span>&#123;</span><br><span class="line">    SurfaceData surfaceData = InitializeSurfaceData(IN);</span><br><span class="line">    InputData inputData = InitializeInputData(IN, surfaceData.normalTS);</span><br><span class="line">                 </span><br><span class="line">    half4 color = UniversalFragmentPBR(inputData, surfaceData);                </span><br><span class="line">    color.rgb = MixFog(color.rgb, inputData.fogCoord);</span><br><span class="line">    color.a = saturate(color.a);</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> color;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>现在我们的着色器可以接收阴影，但因为没有ShadowCaster pass，所以不会对自己及其他物体产生投影，将在下一小节讨论。</p>
+<h2 id="ShadowCaster和DepthOnly-Pass"><a href="#ShadowCaster和DepthOnly-Pass" class="headerlink" title="ShadowCaster和DepthOnly Pass"></a>ShadowCaster和DepthOnly Pass</h2><h3 id="ShadowCaster"><a href="#ShadowCaster" class="headerlink" title="ShadowCaster"></a>ShadowCaster</h3><p>如果希望着色器投影，需要一个标签为”LightMode”=”ShadowCaster”的pass。在Unlit和Lit着色器中都可以使用，但这仅仅是投影功能，如果需要接收阴影，那么就是上文中UniversalForward pass中的做法。<br>并且着色器中还需要一个标签为”LightMode”=”DepthOnly”的pass。这个pass与ShadowCaster十分类似，但是不带阴影偏移。这个pass可能是自定义的Render Feature会用到的深度pass。着色器中所有的pass都共享同一个UnityPerMaterial CBUFFER使得SRP Batcher起作用。在前面的章节，我们将此缓冲放在HLSLINCLUDE中，所以会自动被包含在着色器的各个pass中。<br>如果使用UsePass调取其他着色器中的ShadowCaster或者DepthOnly pass，可能会因为CBUFFER数据不统一导致SRP Batcher做批处理时出现一些问题。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">Pass &#123;</span><br><span class="line">    Name <span class="string">"ShadowCaster"</span></span><br><span class="line">    Tags &#123; <span class="string">"LightMode"</span>=<span class="string">"ShadowCaster"</span> &#125;</span><br><span class="line"> </span><br><span class="line">    ZWrite On</span><br><span class="line">    ZTest LEqual</span><br><span class="line"> </span><br><span class="line">    HLSLPROGRAM</span><br><span class="line">    #pragma prefer_hlslcc gles</span><br><span class="line">    #pragma exclude_renderers d3d11_9x gles</span><br><span class="line"> </span><br><span class="line">    #pragma shader_feature _ALPHATEST_ON</span><br><span class="line">    #pragma shader_feature _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A</span><br><span class="line"> </span><br><span class="line">    #pragma multi_compile_instancing</span><br><span class="line">    #pragma multi_compile _ DOTS_INSTANCING_ON</span><br><span class="line">             </span><br><span class="line">    #pragma vertex ShadowPassVertex</span><br><span class="line">    #pragma fragment ShadowPassFragment</span><br><span class="line">     </span><br><span class="line">    #include <span class="string">"Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"</span></span><br><span class="line">    #include <span class="string">"Packages/com.unity.render-pipelines.universal/ShaderLibrary/SurfaceInput.hlsl"</span></span><br><span class="line">    #include <span class="string">"Packages/com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl"</span></span><br><span class="line"> </span><br><span class="line">    ENDHLSL</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>包含URP管线中的ShadowCasterPass.hlsl，需要定义_BaseMao, _BaseColor和_Cutoff属性，CBUFFER中也需要定义。<br>在片元着色器中，ShadowCaster会在有阴影的地方返回0，并且丢弃没有任何阴影信息的像素(剪裁只会在_ALPHATEST_ON关键字开启的情况下发生)，可以查看com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl中的代码。<br>如果着色器的pass中做了顶点的置换偏移操作，那么也需要将此操作实现于ShadowCaster的pass中，这样会将偏移后的顶点的正确投影计算出来。为了实现这个操作，可以复制ShadowCasterPass的代码到我们的pass，也可以定义一个新的顶点函数并且替换#pragma vertex ShadowPassVertex，例如：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> vertex vert</span></span><br><span class="line"> </span><br><span class="line">...</span><br><span class="line"> </span><br><span class="line"><span class="comment">// 从ShadowCasterPass复制函数并稍作修改</span></span><br><span class="line"><span class="function">Varyings <span class="title">vert</span><span class="params">(Attributes input)</span> </span>&#123;</span><br><span class="line">    Varyings output;</span><br><span class="line">    UNITY_SETUP_INSTANCE_ID(input);</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// 置换的示例</span></span><br><span class="line">    input.positionOS += float4(<span class="number">0</span>, _SinTime.y, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line"> </span><br><span class="line">    output.uv = TRANSFORM_TEX(input.texcoord, _BaseMap);</span><br><span class="line">    output.positionCS = GetShadowPositionHClip(input);</span><br><span class="line">    <span class="keyword">return</span> output;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="DepthOnly"><a href="#DepthOnly" class="headerlink" title="DepthOnly"></a>DepthOnly</h3><p>可以用类似的方法处理DepthOnly pass，只有一点点区别：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">Pass &#123;</span><br><span class="line">    Name <span class="string">"DepthOnly"</span></span><br><span class="line">    Tags &#123; <span class="string">"LightMode"</span>=<span class="string">"DepthOnly"</span> &#125;</span><br><span class="line"> </span><br><span class="line">    ZWrite On</span><br><span class="line">    ColorMask <span class="number">0</span></span><br><span class="line"> </span><br><span class="line">    HLSLPROGRAM</span><br><span class="line">    #pragma prefer_hlslcc gles</span><br><span class="line">    #pragma exclude_renderers d3d11_9x gles</span><br><span class="line"></span><br><span class="line">    #pragma shader_feature _ALPHATEST_ON</span><br><span class="line">    #pragma shader_feature _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A</span><br><span class="line"></span><br><span class="line">    #pragma multi_compile_instancing</span><br><span class="line">    #pragma multi_compile _ DOTS_INSTANCING_ON</span><br><span class="line">             </span><br><span class="line">    #pragma vertex DepthOnlyVertex</span><br><span class="line">    #pragma fragment DepthOnlyFragment</span><br><span class="line">             </span><br><span class="line">    #include <span class="string">"Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"</span></span><br><span class="line">    #include <span class="string">"Packages/com.unity.render-pipelines.universal/ShaderLibrary/SurfaceInput.hlsl"</span></span><br><span class="line">    #include <span class="string">"Packages/com.unity.render-pipelines.universal/Shaders/DepthOnlyPass.hlsl"</span></span><br><span class="line"> </span><br><span class="line">    ENDHLSL</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>DepthOnlyPass.hlsl由URP管线提供，有顶点偏移的操作，则需要复制DepthOnlyVertex函数到我们的着色器中，然后重命名为vert，添加偏移的代码到其中即可。</p>
+<h2 id="内置与URP管线差异总结"><a href="#内置与URP管线差异总结" class="headerlink" title="内置与URP管线差异总结"></a>内置与URP管线差异总结</h2><p>下面总结一下URP管线相比于内置管线在编写着色器时的代码区别，可能会有遗漏。</p>
+<ul>
+<li>在Subshader语义块中使用”RenderPipeline”=”UniversalRenderPipeline”</li>
+<li>URP使用以下”LightMode”标签：<ul>
+<li>UniversalForward - 使用前向渲染器渲染对象</li>
+<li>ShadowCaster - 用来投影</li>
+<li>DepthOPnly - 用来渲染scene view的深度纹理，在自定义的render feature中可以调用</li>
+<li>Meta - 仅用于烘焙光照贴图</li>
+<li>Universal2D - 开启2D 渲染器，取代前向渲染器</li>
+<li>UniversalGBuffer - 与延迟渲染有关，还在开发中。</li>
+</ul>
+</li>
+<li>URP使用单pass的前向渲染，只有第一个标签为”UniversalForward”的Pass(当前GPU支持的)会用被来渲染物体，所以不能渲染多个同类型标签的Pass。&lt;/font&gt;如果使用无标签的Pass，会破坏SRP Batcher的批处理。所以建议分开使用着色器或材质，用于不同的MeshRenderers或在前向渲染器中使用RenderObjects特性在特定的层使用一个overrideMaterial重新绘制物体。</li>
+<li>RenderObjects前向渲染器特性可以用于使用overrideMaterial重绘制对象到指定的层，单属性的值不会被保留，除非使用一个材质属性语义块，但也会破坏SRP的批处理。也可以覆盖stencil和ztest的值。</li>
+<li>可以编写自定义的现象渲染特性，例如Blit方法可以实现自定义的后期处理效果。URP后处理目前不包含自定义的效果。</li>
+<li>使用HLSLPROGRAM/HLSLINCLUDE和ENHLSL，不使用CG的版本，否则会与URP的ShaderLibrary产生冲突。</li>
+<li>包含URP的ShaderLibrary核心库而不是UnityCG.cginc<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"</span></span></span><br></pre></td></tr></table></figure></li>
+<li>内置管线中与顶点着色器和片元着色器相关的结构体一般命名为appdata和v2f，但URP中的使用习惯是命名为Attributes和Varyings。</li>
+<li><p>为了兼容和支持SRP Batcher，着色器中需要有UnityPerMaterial CBUFFER，并且每个Pass都共享同样的CBUFFER，因此使用HLSLINCLUDE在Subshader中包含该CBUFFER。CBUFFER中包含属性语义块中的所有非纹理参数。例如：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Properties &#123;</span><br><span class="line">    _BaseMap (<span class="string">"Example Texture"</span>, <span class="number">2</span>D) = <span class="string">"white"</span> &#123;&#125;</span><br><span class="line">    _BaseColor (<span class="string">"Example Colour"</span>, Color) = (<span class="number">0</span>, <span class="number">0.66</span>, <span class="number">0.73</span>, <span class="number">1</span>)</span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line">HLSLINCLUDE</span><br><span class="line">    #include <span class="string">"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"</span></span><br><span class="line"> </span><br><span class="line">    CBUFFER_START(UnityPerMaterial)</span><br><span class="line">    float4 _BaseMap_ST;</span><br><span class="line">    float4 _BaseColor;</span><br><span class="line">    CBUFFER_END</span><br><span class="line">ENDHLSL</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>如果包含SurfaceInput.hlsl并使用其中的函数，那么需要使用_BaseMap代表albedo贴图，而不是使用_MainTex。但后期处理材质还是会使用_MainTex作为颜色输出进行Blit操作。</p>
+</li>
+<li>定义纹理和采样器，使用以下宏：<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">TEXTURE2D(_BaseMap);</span><br><span class="line">SAMPLER(sampler_BaseMap);</span><br></pre></td></tr></table></figure></li>
+<li>使用SAMPLE_TEXTURE2D()采样贴图：<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">half4 baseMap = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, IN.uv);</span><br></pre></td></tr></table></figure></li>
+<li>TRANSFORM_TEX宏也存在于URP管线中。</li>
+<li><p>UnityObjectToClpPos由TransformObjectToHClip取代。当然也可以使用GetVertexPositionInputs获取顶点在各个空间中的坐标，没有被使用到的坐标系不会参与编译。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Attributes</span> &#123;</span></span><br><span class="line">    float4 positionOS   : POSITION;</span><br><span class="line">&#125;;</span><br><span class="line"> </span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Varyings</span> &#123;</span></span><br><span class="line">    float3 positionCS   : SV_POSITION;</span><br><span class="line">    float3 positionWS   : TEXCOORD2;</span><br><span class="line">&#125;;</span><br><span class="line"> </span><br><span class="line"><span class="function">Varyings <span class="title">vert</span><span class="params">(Attributes IN)</span> </span>&#123;</span><br><span class="line">    Varyings OUT;</span><br><span class="line">    VertexPositionInputs positionInputs = GetVertexPositionInputs(IN.positionOS.xyz);</span><br><span class="line">    OUT.positionCS = positionInputs.positionCS;</span><br><span class="line">    OUT.positionWS = positionInputs.positionWS;</span><br><span class="line">    <span class="keyword">return</span> OUT;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>与顶点位置类似，使用GetVertexNormalInputs可以获取世界空间的Normal, Tangent和Bitangent向量。如果仅需要世界空间法向量，那么可以使用TransformObjectToWorldNormal()获取。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">VertexNormalInputs normalInputs = GetVertexNormalInputs(IN.normalOS, IN.tangentOS);</span><br><span class="line"><span class="comment">// 仅需要Normal时使用:</span></span><br><span class="line">OUT.normalWS = TransformObjectToWorldNormal(IN.normalOS)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>URP不支持Surface Shader，所以需要自己编写vertex/fragment着色器。如果需要支持灯光交互，可以包含Lighting.hlsl，其中含有很多计算光照的函数。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"</span></span></span><br></pre></td></tr></table></figure></li>
+<li><p>如果包含了Lighting.hlsl计算光影，那么下面的一些关键字可能需要被定义，如果某些关键字没有被定义，那么ShaderLibrary会跳过相关的计算步骤：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 主光源阴影</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _ _MAIN_LIGHT_SHADOWS</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE</span></span><br><span class="line"> </span><br><span class="line"><span class="comment">// 额外灯光和其阴影</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _ _ADDITIONAL_LIGHT_SHADOWS</span></span><br><span class="line"> </span><br><span class="line"><span class="comment">// 柔和的阴影</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _ _SHADOWS_SOFT</span></span><br><span class="line"> </span><br><span class="line"><span class="comment">// 其他(混合光照，烘焙光照贴图，雾)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _ _MIXED_LIGHTING_SUBTRACTIVE</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _ DIRLIGHTMAP_COMBINED</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile _ LIGHTMAP_ON</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile_fog</span></span><br><span class="line"> </span><br><span class="line"><span class="comment">// 支持阴影则须将世界空间的顶点位置信息和ShadowCoord传入片元着色器</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>使用ComputeFogFactor和MixFog函数处理雾：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> multi_compile_fog</span></span><br><span class="line"> </span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Varyings</span> &#123;</span></span><br><span class="line">    ...</span><br><span class="line">    half fogFactor : TEXCOORD5;</span><br><span class="line">    <span class="comment">// 或者其他没有被使用的texcoord</span></span><br><span class="line">    <span class="comment">// 如果都被占用了，则将其与一个half3合并在一起</span></span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line"> </span><br><span class="line"><span class="comment">// 顶点着色器:</span></span><br><span class="line">half fogFactor = ComputeFogFactor(positionInputs.positionCS.z);</span><br><span class="line"> </span><br><span class="line"><span class="comment">// 片元着色器:</span></span><br><span class="line">color.rgb = MixFog(color.rgb, IN.fogFactor);</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div>总要恰饭的嘛</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/blog/images/wechatpay.png" alt="Alex Tsui 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/blog/images/alipay.jpg" alt="Alex Tsui 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/blog/tags/Unity/" rel="tag"><i class="fa fa-tag"></i> Unity</a>
+              <a href="/blog/tags/URP/" rel="tag"><i class="fa fa-tag"></i> URP</a>
+              <a href="/blog/tags/%E6%9D%90%E8%B4%A8/" rel="tag"><i class="fa fa-tag"></i> 材质</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/blog/2020/05/27/builtinttourp/" rel="prev" title="Unity Built-in转URP速查表">
+      <i class="fa fa-chevron-left"></i> Unity Built-in转URP速查表
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Shaderlab"><span class="nav-number">1.</span> <span class="nav-text">Shaderlab</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#HLSL"><span class="nav-number">2.</span> <span class="nav-text">HLSL</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#标量类型变量"><span class="nav-number">2.1.</span> <span class="nav-text">标量类型变量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#向量类型变量"><span class="nav-number">2.2.</span> <span class="nav-text">向量类型变量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#矩阵"><span class="nav-number">2.3.</span> <span class="nav-text">矩阵</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#数组"><span class="nav-number">2.4.</span> <span class="nav-text">数组</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#其他类型"><span class="nav-number">2.5.</span> <span class="nav-text">其他类型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#函数"><span class="nav-number">2.6.</span> <span class="nav-text">函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#开始编写着色器"><span class="nav-number">2.7.</span> <span class="nav-text">开始编写着色器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#结构体"><span class="nav-number">3.</span> <span class="nav-text">结构体</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#顶点着色器"><span class="nav-number">4.</span> <span class="nav-text">顶点着色器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#片元着色器"><span class="nav-number">5.</span> <span class="nav-text">片元着色器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#关键字和着色器变体"><span class="nav-number">6.</span> <span class="nav-text">关键字和着色器变体</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#multi-compile"><span class="nav-number">6.1.</span> <span class="nav-text">multi_compile</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#shader-feature"><span class="nav-number">6.2.</span> <span class="nav-text">shader_feature</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#着色器变体"><span class="nav-number">6.3.</span> <span class="nav-text">着色器变体</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#关键字的上限"><span class="nav-number">6.4.</span> <span class="nav-text">关键字的上限</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#光照"><span class="nav-number">7.</span> <span class="nav-text">光照</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#PRB光照"><span class="nav-number">8.</span> <span class="nav-text">PRB光照</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ShadowCaster和DepthOnly-Pass"><span class="nav-number">9.</span> <span class="nav-text">ShadowCaster和DepthOnly Pass</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ShadowCaster"><span class="nav-number">9.1.</span> <span class="nav-text">ShadowCaster</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DepthOnly"><span class="nav-number">9.2.</span> <span class="nav-text">DepthOnly</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内置与URP管线差异总结"><span class="nav-number">10.</span> <span class="nav-text">内置与URP管线差异总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Alex Tsui"
+      src="/blog/images/avatar.png">
+  <p class="site-author-name" itemprop="name">Alex Tsui</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/blog/archives/">
+        
+          <span class="site-state-item-count">13</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/blog/categories/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/blog/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2N1aWhvbmd6aGkxOTkx" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;cuihongzhi1991"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS9BbGV4VHN1aUNO" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;AlexTsuiCN"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+      <!--tag cloud-->
+      
+      <script type="text/javascript" charset="utf-8" src="/blog/js/tagcloud.js"></script>
+      <script type="text/javascript" charset="utf-8" src="/blog/js/tagcanvas.js"></script>
+        <div class="widget-wrap">
+          <h3 class="widget-title">Tag Cloud</h3>
+          <div id="myCanvasContainer" class="widget tagcloud">
+            <canvas width="250" height="250" id="resCanvas" style="width:100%">
+              <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/UE4/" rel="tag">UE4</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/URP/" rel="tag">URP</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/Unity/" rel="tag">Unity</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%85%89%E7%85%A7%E8%B4%B4%E5%9B%BE/" rel="tag">光照贴图</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%8D%A1%E9%80%9A%E7%9D%80%E8%89%B2/" rel="tag">卡通着色</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" rel="tag">图形学</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E5%BE%AE%E7%A7%AF%E5%88%86/" rel="tag">微积分</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%95%B0%E5%AD%A6/" rel="tag">数学</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%9D%90%E8%B4%A8/" rel="tag">材质</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%AC%A1%E8%A1%A8%E9%9D%A2%E6%95%A3%E5%B0%84/" rel="tag">次表面散射</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E6%B8%B2%E6%9F%93%E7%AE%A1%E7%BA%BF/" rel="tag">渲染管线</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E7%90%83%E9%9D%A2%E9%AB%98%E6%96%AF/" rel="tag">球面高斯</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/blog/tags/%E8%A7%92%E8%89%B2/" rel="tag">角色</a><span class="tag-list-count">1</span></li></ul>
+            </canvas>
+          </div>
+        </div>
+      
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Alex Tsui</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/blog/lib/anime.min.js"></script>
+  <script src="/blog/lib/velocity/velocity.min.js"></script>
+  <script src="/blog/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/blog/js/utils.js"></script>
+
+<script src="/blog/js/motion.js"></script>
+
+
+<script src="/blog/js/schemes/pisces.js"></script>
+
+
+<script src="/blog/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://alextsui.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://cuihongzhi1991.github.io/2020/06/08/urpshadercode/";
+    this.page.identifier = "2020/06/08/urpshadercode/";
+    this.page.title = "编写URP着色器";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://alextsui.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
+
+</body>
+</html>
