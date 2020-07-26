@@ -21,15 +21,21 @@
     var CONFIG = {"hostname":"cuihongzhi1991.github.io","root":"/blog/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"disqus","storage":true,"lazyload":false,"nav":null,"activeClass":"disqus"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta property="og:type" content="website">
-<meta property="og:title" content="Alex Technical Art">
-<meta property="og:url" content="https://cuihongzhi1991.github.io/tags/Unity/index.html">
+  <meta name="description" content="学习和使用VEX有一年多的时间了，近日翻到了2015年的一部VEX教程《VEX in Houdini》。曾经因为刚入门Houdini，还不适合学习这部教比较进阶甚至高级的教程。而现在又翻到它简直如获珍宝。它将很多paper中的算法在Houdini中用VEX来实现。这是读paper、学习算法以及落地实现的极佳机会。所以决定记录一下完整的学习笔记和心得。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="VEX101——VEX概览">
+<meta property="og:url" content="https://cuihongzhi1991.github.io/2020/07/26/vex101_overview/index.html">
 <meta property="og:site_name" content="Alex Technical Art">
+<meta property="og:description" content="学习和使用VEX有一年多的时间了，近日翻到了2015年的一部VEX教程《VEX in Houdini》。曾经因为刚入门Houdini，还不适合学习这部教比较进阶甚至高级的教程。而现在又翻到它简直如获珍宝。它将很多paper中的算法在Houdini中用VEX来实现。这是读paper、学习算法以及落地实现的极佳机会。所以决定记录一下完整的学习笔记和心得。">
 <meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-07-26T13:06:48.000Z">
+<meta property="article:modified_time" content="2020-07-26T04:05:09.441Z">
 <meta property="article:author" content="Alex Tsui">
+<meta property="article:tag" content="Houdini">
+<meta property="article:tag" content="VEX">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="https://cuihongzhi1991.github.io/tags/Unity/">
+<link rel="canonical" href="https://cuihongzhi1991.github.io/2020/07/26/vex101_overview/">
 
 
 <script id="page-configurations">
@@ -37,12 +43,12 @@
   CONFIG.page = {
     sidebar: "",
     isHome : false,
-    isPost : false,
+    isPost : true,
     lang   : 'zh-CN'
   };
 </script>
 
-  <title>标签: Unity | Alex Technical Art</title>
+  <title>VEX101——VEX概览 | Alex Technical Art</title>
   
 
 
@@ -149,77 +155,142 @@
         <div class="content-wrap">
           
 
-          <div class="content tag">
+          <div class="content post posts-expand">
             
 
+    
   
   
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cuihongzhi1991.github.io/2020/07/26/vex101_overview/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/blog/images/avatar.png">
+      <meta itemprop="name" content="Alex Tsui">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Alex Technical Art">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          VEX101——VEX概览
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-07-26 21:06:48" itemprop="dateCreated datePublished" datetime="2020-07-26T21:06:48+08:00">2020-07-26</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/blog/categories/Houdini/" itemprop="url" rel="index"><span itemprop="name">Houdini</span></a>
+                </span>
+            </span>
+
+          
   
-  <div class="post-block">
-    <div class="posts-collapse">
-      <div class="collection-title">
-        <h2 class="collection-header">Unity
-          <small>标签</small>
-        </h2>
-      </div>
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/blog/2020/07/26/vex101_overview/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/07/26/vex101_overview/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
 
       
-    <div class="collection-year">
-      <span class="collection-header">2020</span>
+        <p>学习和使用VEX有一年多的时间了，近日翻到了2015年的一部VEX教程《VEX in Houdini》。曾经因为刚入门Houdini，还不适合学习这部教比较进阶甚至高级的教程。而现在又翻到它简直如获珍宝。它将很多paper中的算法在Houdini中用VEX来实现。这是读paper、学习算法以及落地实现的极佳机会。所以决定记录一下完整的学习笔记和心得。<br><a id="more"></a></p>
+<h2 id="什么是VEX"><a href="#什么是VEX" class="headerlink" title="什么是VEX"></a>什么是VEX</h2><p>仅可以在Houdini中使用的类C编程语言。但又不像C或C++那么底层，读写硬盘上的内容是有限制的，读取点云这种特殊形式的文件是可行并且速度很快的。一开始是作为Houdini的着色器编程语言开发出来的，后来也渐渐广泛应用于几何处理。VEX编写的小程序很像计算着色器，但是是在CPU上并行处理的。VEX也有可视化编程的方式——VOP，其中的逻辑会最终编译成VEX。</p>
+<h2 id="VEX的语境"><a href="#VEX的语境" class="headerlink" title="VEX的语境"></a>VEX的语境</h2><p>编辑几何数据一般在SOP环境下进行——surface operation。常用的数据是P, N, ptnum, Npt, Cd等。但更底层的几何数据则需要在CVEX语境下读写，也只能在此语境下创造新的几何体。</p>
+<h2 id="变量及类型"><a href="#变量及类型" class="headerlink" title="变量及类型"></a>变量及类型</h2><p>基础的变量类型： float, int, string。没有double类型，并且精度也被限制在32-bit。<br>线性代数类型：vector和matrix。<br>扩展类型：array和struct。<br>双向散射分布函数：bsdf。<br>没有指针，不能直接访问内存，所以不会导致houdini崩溃。</p>
+<h2 id="流程控制"><a href="#流程控制" class="headerlink" title="流程控制"></a>流程控制</h2><p>分支：if, else if, else。<br>循环：while, for, foreach。</p>
+<h2 id="函数"><a href="#函数" class="headerlink" title="函数"></a>函数</h2><p>与C语言类似： int foo(float a, b; int c){ // body returning an int }<br>函数重载：<br>int square_me(int a) { return a <em> a; }<br>float square_me(float a) { return a </em> a; }<br>一般情况下不做递归运算。</p>
+<h2 id="预编译"><a href="#预编译" class="headerlink" title="预编译"></a>预编译</h2><h1 id="include-“vfl-code”"><a href="#include-“vfl-code”" class="headerlink" title="include “vfl_code”"></a>include “vfl_code”</h1><h1 id="define-kPI-3-1415926"><a href="#define-kPI-3-1415926" class="headerlink" title="define kPI 3.1415926"></a>define kPI 3.1415926</h1><h1 id="pragmas"><a href="#pragmas" class="headerlink" title="pragmas"></a>pragmas</h1>
     </div>
 
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2020-06-08T21:06:48+08:00"
-              content="2020-06-08">
-          06-08
-        </time>
+    
+    
+    
+        <div class="reward-container">
+  <div>总要恰饭的嘛</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/blog/images/wechatpay.png" alt="Alex Tsui 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/blog/images/alipay.jpg" alt="Alex Tsui 支付宝">
+        <p>支付宝</p>
       </div>
 
-      <div class="post-title">
-          <a class="post-title-link" href="/blog/2020/06/08/urpshadercode/" itemprop="url">
-            <span itemprop="name">编写URP着色器</span>
-          </a>
-      </div>
-
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2020-05-27T20:43:03+08:00"
-              content="2020-05-27">
-          05-27
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/blog/2020/05/27/builtinttourp/" itemprop="url">
-            <span itemprop="name">Unity Built-in转URP速查表</span>
-          </a>
-      </div>
-
-    </header>
-  </article>
-
-    </div>
   </div>
-  
-  
-  
+</div>
 
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/blog/tags/Houdini/" rel="tag"><i class="fa fa-tag"></i> Houdini</a>
+              <a href="/blog/tags/VEX/" rel="tag"><i class="fa fa-tag"></i> VEX</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/blog/2020/06/08/urpshadercode/" rel="prev" title="编写URP着色器">
+      <i class="fa fa-chevron-left"></i> 编写URP着色器
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
   
 
 
 
           </div>
           
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
 
 <script>
   window.addEventListener('tabs:register', () => {
@@ -266,6 +337,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#什么是VEX"><span class="nav-number">1.</span> <span class="nav-text">什么是VEX</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#VEX的语境"><span class="nav-number">2.</span> <span class="nav-text">VEX的语境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#变量及类型"><span class="nav-number">3.</span> <span class="nav-text">变量及类型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#流程控制"><span class="nav-number">4.</span> <span class="nav-text">流程控制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#函数"><span class="nav-number">5.</span> <span class="nav-text">函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#预编译"><span class="nav-number">6.</span> <span class="nav-text">预编译</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#include-“vfl-code”"><span class="nav-number"></span> <span class="nav-text">include “vfl_code”</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#define-kPI-3-1415926"><span class="nav-number"></span> <span class="nav-text">define kPI 3.1415926</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pragmas"><span class="nav-number"></span> <span class="nav-text">pragmas</span></a></div>
       </div>
       <!--/noindex-->
 
@@ -416,6 +488,26 @@
   }
   // defer loading until the whole page loading is completed
   window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "https://cuihongzhi1991.github.io/2020/07/26/vex101_overview/";
+    this.page.identifier = "2020/07/26/vex101_overview/";
+    this.page.title = "VEX101——VEX概览";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://alextsui.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
 </script><!-- hexo-inject:begin --><!-- hexo-inject:end -->
 
 </body>
